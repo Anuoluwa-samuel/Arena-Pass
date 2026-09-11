@@ -1,260 +1,123 @@
-"use client"
-
-import { use, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  AlertCircle 
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { notFound } from "next/navigation"
+import { ArrowLeft, Calendar, Clock, MapPin, Users, ShieldCheck, Zap, QrCode } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Navbar } from "@/components/navbar"
-import { CountdownTimer } from "@/components/countdown-timer"
-import { AlertModal } from "@/components/alert-modal"
 import { Reveal } from "@/components/motion"
-import { getSessionById } from "@/lib/mock-data"
-import { cn } from "@/lib/utils"
+import { SessionStatusBadge } from "@/components/shared/status-badge"
+import { TeamGrid } from "@/components/shared/team-grid"
+import { SessionActions } from "@/components/site/session-actions"
+import { formatDate, formatMoney, formatTimeRange } from "@/lib/format"
+import { getSessionWithTeams } from "@/server/services/sessions"
+import { toPublicSession, toPublicTeams } from "@/server/serializers"
+import { AppError } from "@/server/http/errors"
 
-function getSessionStatus(session: { 
-  availableSlots: number
-  ticketWindowStart: Date
-  ticketWindowEnd: Date 
-}): "upcoming" | "open" | "closed" | "sold-out" {
-  const now = new Date()
-  
-  if (session.availableSlots === 0) return "sold-out"
-  if (now < session.ticketWindowStart) return "upcoming"
-  if (now >= session.ticketWindowStart && now <= session.ticketWindowEnd) return "open"
-  return "closed"
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  try {
+    const { session } = await getSessionWithTeams(id)
+    return { title: session.title, description: `${formatDate(session.startsAt)} at ${session.venue}` }
+  } catch {
+    return { title: "Session not found" }
+  }
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
-
-export default function SessionDetailsPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
-}) {
-  const { id } = use(params)
-  const router = useRouter()
-  const session = getSessionById(id)
-  const [showClosedModal, setShowClosedModal] = useState(false)
-
-  if (!session) {
-    return (
-      <div className="min-h-screen">
-        <Navbar />
-        <main className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 py-24">
-          <AlertCircle className="size-16 text-muted-foreground" />
-          <h1 className="mt-4 text-2xl font-bold">Session Not Found</h1>
-          <p className="mt-2 text-muted-foreground">
-            The session you&apos;re looking for doesn&apos;t exist.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/sessions">Browse Sessions</Link>
-          </Button>
-        </main>
-      </div>
-    )
+export default async function SessionDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  let data: Awaited<ReturnType<typeof getSessionWithTeams>>
+  try {
+    data = await getSessionWithTeams(id)
+  } catch (err) {
+    if (err instanceof AppError && err.code === "SESSION_NOT_FOUND") notFound()
+    throw err
   }
-
-  const status = getSessionStatus(session)
-  const isWindowOpen = status === "open"
-  const isSoldOut = status === "sold-out"
-  const isUpcoming = status === "upcoming"
-
-  const handleBuyTicket = () => {
-    if (!isWindowOpen) {
-      setShowClosedModal(true)
-      return
-    }
-    router.push(`/payment?session=${session.id}`)
-  }
-
-  const handleWindowExpire = () => {
-    setShowClosedModal(true)
-  }
+  const session = toPublicSession(data.session)
+  const teams = toPublicTeams(data.teams)
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <Link 
-          href="/sessions" 
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          Back to sessions
-        </Link>
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <Link href="/sessions" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="size-4" />
+        Back to sessions
+      </Link>
 
-        {/* Header */}
-        <Reveal trigger="mount" className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Football Session
-            </h1>
-            <p className="mt-1 text-muted-foreground">{session.venue}</p>
-          </div>
-          <Badge
-            variant={isWindowOpen ? "default" : isSoldOut ? "destructive" : "secondary"}
-            className={cn(
-              "self-start text-sm",
-              isWindowOpen && "bg-primary"
-            )}
-          >
-            {isWindowOpen && "Tickets Available"}
-            {isSoldOut && "Sold Out"}
-            {isUpcoming && "Coming Soon"}
-            {status === "closed" && "Window Closed"}
-          </Badge>
-        </Reveal>
+      <Reveal trigger="mount" className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <SessionStatusBadge status={session.status} pulse />
+          <h1 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">{session.title}</h1>
+          <p className="mt-2 flex items-center gap-2 text-muted-foreground">
+            <MapPin className="size-4" />
+            {session.venue}
+          </p>
+        </div>
+        <div className="text-left sm:text-right">
+          <p className="text-sm text-muted-foreground">Per player</p>
+          <p className="text-3xl font-bold text-primary">{formatMoney(session.ticketPrice, session.currency)}</p>
+        </div>
+      </Reveal>
 
-        {/* Countdown Timer */}
-        {isWindowOpen && (
-          <Reveal trigger="mount" delay={0.1}>
-            <Card className="mb-6 border-primary/50 bg-primary/5">
-              <CardContent className="py-6">
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <p className="text-sm font-medium text-primary">
-                    Purchase window closes in:
-                  </p>
-                  <CountdownTimer
-                    targetDate={session.ticketWindowEnd}
-                    variant="large"
-                    onExpire={handleWindowExpire}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </Reveal>
-        )}
-
-        {isUpcoming && (
-          <Reveal trigger="mount" delay={0.1}>
-            <Card className="mb-6 border-border bg-secondary/30">
-              <CardContent className="py-6">
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Ticket window opens in:
-                  </p>
-                  <CountdownTimer
-                    targetDate={session.ticketWindowStart}
-                    variant="large"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </Reveal>
-        )}
-
-        {/* Session Details */}
-        <Reveal trigger="mount" delay={isWindowOpen || isUpcoming ? 0.18 : 0.1}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Session Details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <DetailItem
-                  icon={Calendar}
-                  label="Date"
-                  value={formatDate(session.date)}
-                />
-                <DetailItem
-                  icon={Clock}
-                  label="Time"
-                  value={`${session.startTime} – ${session.endTime}`}
-                />
-                <DetailItem
-                  icon={MapPin}
-                  label="Venue"
-                  value={session.venue}
-                />
-                <DetailItem
-                  icon={Users}
-                  label="Available Spots"
+      <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-6">
+          <Reveal trigger="mount" delay={0.08}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Session details</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-5 sm:grid-cols-2">
+                <Detail icon={Calendar} label="Date" value={formatDate(session.startsAt)} />
+                <Detail icon={Clock} label="Kick-off" value={formatTimeRange(session.startsAt, session.endsAt)} />
+                <Detail icon={Users} label="Format" value={`${session.teamsCount} teams × ${session.playersPerTeam} players`} />
+                <Detail
+                  icon={Zap}
+                  label="Availability"
                   value={
                     <span>
-                      <span className={cn(
-                        "font-semibold",
-                        session.availableSlots <= 5 && session.availableSlots > 0 && "text-destructive"
-                      )}>
-                        {session.availableSlots}
-                      </span>
-                      <span className="text-muted-foreground">
-                        /{session.totalSlots}
-                      </span>
+                      <span className={session.availableSlots <= 5 && session.availableSlots > 0 ? "font-semibold text-destructive" : "font-semibold"}>{session.availableSlots}</span>
+                      <span className="text-muted-foreground"> of {session.totalCapacity} slots left</span>
                     </span>
                   }
                 />
-              </div>
+                {session.description && <p className="text-pretty leading-relaxed text-muted-foreground sm:col-span-2">{session.description}</p>}
+              </CardContent>
+            </Card>
+          </Reveal>
 
-              <div className="border-t border-border pt-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-medium">Ticket Price</span>
-                  <span className="text-3xl font-bold text-primary">
-                    ${session.price}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Reveal>
-
-        {/* Action Button */}
-        <div className="mt-8">
-          {isSoldOut ? (
-            <Button size="lg" variant="outline" className="w-full">
-              Join Waitlist
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              className={cn("w-full", isWindowOpen && "animate-pulse-glow")}
-              disabled={!isWindowOpen}
-              onClick={handleBuyTicket}
-            >
-              {isWindowOpen ? "Buy Ticket" : "Window Not Open"}
-            </Button>
-          )}
+          <Reveal trigger="mount" delay={0.14}>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle>Team board</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  <span className="mr-3 inline-flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-sm bg-primary/30" />Taken</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-sm border border-dashed border-border" />Open</span>
+                </p>
+              </CardHeader>
+              <CardContent>
+                <TeamGrid teams={teams} />
+                <p className="mt-4 text-sm text-muted-foreground">Teams fill evenly as players book. You can request a team at checkout if it still has space.</p>
+              </CardContent>
+            </Card>
+          </Reveal>
         </div>
-      </main>
 
-      <AlertModal
-        open={showClosedModal}
-        onOpenChange={setShowClosedModal}
-        title="Ticket Window Closed"
-        description="The purchase window for this session has closed. Please check other available sessions."
-        variant="warning"
-      />
-    </div>
+        <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+          <Reveal trigger="mount" delay={0.1}>
+            <SessionActions session={session} teams={teams} />
+          </Reveal>
+          <Reveal trigger="mount" delay={0.2}>
+            <ul className="space-y-3 rounded-2xl border border-border bg-card/60 p-5 text-sm text-muted-foreground">
+              <li className="flex items-start gap-3"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />Slot is held for 10 minutes while you pay. Payment is verified before your ticket is issued.</li>
+              <li className="flex items-start gap-3"><QrCode className="mt-0.5 size-4 shrink-0 text-primary" />Your digital ticket with QR code is emailed instantly and available in your account.</li>
+              <li className="flex items-start gap-3"><Users className="mt-0.5 size-4 shrink-0 text-primary" />Booking one slot books one player. Bringing friends? Book a slot for each of them.</li>
+            </ul>
+          </Reveal>
+        </div>
+      </div>
+    </main>
   )
 }
 
-function DetailItem({ 
-  icon: Icon, 
-  label, 
-  value 
-}: { 
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: React.ReactNode
-}) {
+function Detail({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary">

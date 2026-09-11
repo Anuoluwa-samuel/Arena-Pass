@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'PlayPass - Football E-Ticketing',
-  description: 'Secure your spot and play the game. Book football sessions with ease.',
-  generator: 'v0.app',
+  title: { default: 'Arena Pass — Football Session Tickets', template: '%s · Arena Pass' },
+  description: 'Book a slot in organised 8-team football sessions. Secure payment, instant digital ticket, QR entry.',
+  applicationName: 'Arena Pass',
   icons: {
     icon: [
       {
@@ -38,6 +39,7 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased">
         {children}
+        <Toaster position="top-center" richColors closeButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

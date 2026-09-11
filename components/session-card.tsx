@@ -1,159 +1,91 @@
 "use client"
 
 import Link from "next/link"
-import { Calendar, Clock, Users } from "lucide-react"
+import { Calendar, Clock, MapPin, Users } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { CountdownTimer } from "@/components/countdown-timer"
+import { SessionStatusBadge } from "@/components/shared/status-badge"
+import { formatMoney, formatShortDate, formatTimeRange } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import type { PublicSession } from "@/server/serializers"
 
-export interface Session {
-  id: string
-  date: Date
-  startTime: string
-  endTime: string
-  totalSlots: number
-  availableSlots: number
-  price: number
-  venue: string
-  ticketWindowStart: Date
-  ticketWindowEnd: Date
-}
+export type { PublicSession as Session }
 
-interface SessionCardProps {
-  session: Session
-  className?: string
-}
-
-function getSessionStatus(session: Session): "upcoming" | "open" | "closed" | "sold-out" {
-  const now = new Date()
-  
-  if (session.availableSlots === 0) {
-    return "sold-out"
-  }
-  
-  if (now < session.ticketWindowStart) {
-    return "upcoming"
-  }
-  
-  if (now >= session.ticketWindowStart && now <= session.ticketWindowEnd) {
-    return "open"
-  }
-  
-  return "closed"
-}
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  })
-}
-
-export function SessionCard({ session, className }: SessionCardProps) {
-  const status = getSessionStatus(session)
-  const isWindowOpen = status === "open"
-  const isSoldOut = status === "sold-out"
-  const isUpcoming = status === "upcoming"
-  const isClosed = status === "closed"
+export function SessionCard({ session, className }: { session: PublicSession; className?: string }) {
+  const isOpen = session.status === "OPEN_FOR_BOOKING"
+  const isFull = session.status === "FULL"
+  const isUpcoming = session.status === "PUBLISHED"
+  const lowStock = isOpen && session.availableSlots <= 5
+  const cta = isOpen ? "Book a slot" : isFull ? "Join waitlist" : "View details"
 
   return (
-    <Card className={cn(
-      "overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg",
-      isWindowOpen && "ring-2 ring-primary/50",
-      className
-    )}>
+    <Card
+      className={cn(
+        "group relative flex h-full flex-col overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5",
+        isOpen && "ring-1 ring-primary/40",
+        className
+      )}
+    >
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="size-4" />
-              <span className="text-sm">{formatDate(session.date)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="size-4" />
-              <span className="text-sm">
-                {session.startTime} – {session.endTime}
-              </span>
-            </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-semibold leading-tight">{session.title}</h3>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" />
+              <span className="truncate">{session.venue}</span>
+            </p>
           </div>
-          <Badge 
-            variant={
-              isWindowOpen ? "default" : 
-              isSoldOut ? "destructive" : 
-              "secondary"
-            }
-            className={cn(
-              isWindowOpen && "bg-primary text-primary-foreground"
-            )}
-          >
-            {isWindowOpen && "Open"}
-            {isSoldOut && "Sold Out"}
-            {isUpcoming && "Coming Soon"}
-            {isClosed && "Closed"}
-          </Badge>
+          <SessionStatusBadge status={session.status} pulse={isOpen} className="shrink-0" />
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="size-4 text-muted-foreground" />
-            <span className="text-sm">
-              <span className={cn(
-                "font-semibold",
-                session.availableSlots <= 5 && session.availableSlots > 0 && "animate-pulse text-destructive"
-              )}>
-                {session.availableSlots}
-              </span>
-              <span className="text-muted-foreground">/{session.totalSlots} spots</span>
-            </span>
+      <CardContent className="flex flex-1 flex-col gap-4">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="size-4" />
+            <span className="text-foreground">{formatShortDate(session.startsAt)}</span>
           </div>
-          <span className="text-lg font-bold text-primary">
-            ${session.price}
-          </span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="size-4" />
+            <span className="text-foreground">{formatTimeRange(session.startsAt, session.endsAt)}</span>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Users className="size-4" />
+              <span className={cn("font-semibold text-foreground", lowStock && "text-destructive")}>{session.availableSlots}</span>
+              <span>of {session.totalCapacity} slots left</span>
+            </span>
+            <span className="text-base font-bold text-primary">{formatMoney(session.ticketPrice, session.currency)}</span>
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary" aria-hidden="true">
+            <div className={cn("h-full rounded-full transition-[width] duration-500", isFull ? "bg-destructive" : "bg-primary")} style={{ width: `${session.occupancyPercent}%` }} />
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {session.teamsCount} teams × {session.playersPerTeam} players
+          </p>
         </div>
 
         {isUpcoming && (
           <div className="rounded-lg bg-secondary/50 p-3">
-            <p className="mb-2 text-xs text-muted-foreground">
-              Ticket window opens in:
-            </p>
-            <CountdownTimer 
-              targetDate={session.ticketWindowStart}
-              variant="compact"
-            />
+            <p className="mb-1.5 text-xs text-muted-foreground">Booking opens in</p>
+            <CountdownTimer targetDate={new Date(session.bookingOpensAt)} variant="compact" />
           </div>
         )}
-
-        {isWindowOpen && (
+        {isOpen && (
           <div className="rounded-lg bg-primary/10 p-3">
-            <p className="mb-2 text-xs text-primary">
-              Window closes in:
-            </p>
-            <CountdownTimer 
-              targetDate={session.ticketWindowEnd}
-              variant="compact"
-            />
+            <p className="mb-1.5 text-xs text-primary">Booking closes in</p>
+            <CountdownTimer targetDate={new Date(session.bookingDeadline)} variant="compact" />
           </div>
         )}
       </CardContent>
 
       <CardFooter>
-        <Button 
-          asChild
-          className="w-full"
-          disabled={!isWindowOpen}
-          variant={isWindowOpen ? "default" : "secondary"}
-        >
-          <Link href={`/sessions/${session.id}`}>
-            {isWindowOpen && "Buy Ticket"}
-            {isSoldOut && "Join Waitlist"}
-            {isUpcoming && "View Details"}
-            {isClosed && "View Details"}
-          </Link>
+        <Button asChild className="w-full" variant={isOpen ? "default" : "secondary"}>
+          <Link href={`/sessions/${session.id}`}>{cta}</Link>
         </Button>
       </CardFooter>
     </Card>

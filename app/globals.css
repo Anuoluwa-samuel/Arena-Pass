@@ -187,3 +187,20 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Faint pitch markings behind the hero — brand texture, never competes with content. */
+.pitch-lines {
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--primary) 60%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at center, transparent 118px, color-mix(in oklch, var(--primary) 60%, transparent) 119px, transparent 121px);
+  background-size: 100% 100%, 100% 100%;
+  background-position: center, center;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* Ticket print styles: only the ticket, on white. */
+@media print {
+  body { background: white !important; color: black !important; }
+  .print-hidden { display: none !important; }
+  .print-ticket { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; color: black !important; }
+}

@@ -1,59 +1,73 @@
-import { Navbar } from "@/components/navbar"
+import Link from "next/link"
+import { CalendarX2 } from "lucide-react"
 import { SessionCard } from "@/components/session-card"
 import { Reveal, StaggerGroup, StaggerItem } from "@/components/motion"
-import { mockSessions } from "@/lib/mock-data"
+import { EmptyState } from "@/components/shared/empty-state"
+import { PageHeader } from "@/components/shared/page-header"
+import { Button } from "@/components/ui/button"
+import { getDefaultArena } from "@/server/services/arenas"
+import { listSessions } from "@/server/services/sessions"
+import { toPublicSession } from "@/server/serializers"
+import { cn } from "@/lib/utils"
 
-export default function SessionsPage() {
+export const dynamic = "force-dynamic"
+export const metadata = { title: "Sessions" }
+
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "open", label: "Open now" },
+  { key: "soon", label: "Opening soon" },
+] as const
+
+export default async function SessionsPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
+  const { filter = "all" } = await searchParams
+  const arena = await getDefaultArena()
+  const result = await listSessions({ arenaId: arena.id, publicOnly: true, pageSize: 60 })
+  const all = result.items.map(toPublicSession)
+  const sessions = all.filter((s) => (filter === "open" ? s.status === "OPEN_FOR_BOOKING" : filter === "soon" ? s.status === "PUBLISHED" : true))
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <Reveal trigger="mount">
+        <PageHeader eyebrow={arena.name} title="Upcoming sessions" description="Every session is 8 teams of 4. Pick one, grab a slot, and we'll see you on the pitch." />
+      </Reveal>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <Reveal trigger="mount" className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Upcoming Sessions
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Find and book your next football session
-          </p>
-        </Reveal>
+      <div className="mt-8 flex flex-wrap gap-2">
+        {FILTERS.map((f) => {
+          const count = f.key === "all" ? all.length : all.filter((s) => (f.key === "open" ? s.status === "OPEN_FOR_BOOKING" : s.status === "PUBLISHED")).length
+          return (
+            <Link
+              key={f.key}
+              href={f.key === "all" ? "/sessions" : `/sessions?filter=${f.key}`}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                filter === f.key ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+              )}
+            >
+              {f.label}
+              <span className="rounded-full bg-secondary px-1.5 text-xs text-secondary-foreground">{count}</span>
+            </Link>
+          )
+        })}
+      </div>
 
-        <StaggerGroup
-          trigger="mount"
-          delayChildren={0.1}
-          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {mockSessions.map((session) => (
+      {sessions.length === 0 ? (
+        <EmptyState
+          className="mt-8"
+          icon={CalendarX2}
+          title={filter === "all" ? "No sessions scheduled yet" : "Nothing here right now"}
+          description={filter === "all" ? "Check back soon — new sessions are added every week." : "Try another filter or check back later."}
+          action={filter !== "all" ? <Button variant="outline" asChild><Link href="/sessions">Show all sessions</Link></Button> : undefined}
+        />
+      ) : (
+        <StaggerGroup trigger="mount" delayChildren={0.1} className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {sessions.map((session) => (
             <StaggerItem key={session.id}>
               <SessionCard session={session} />
             </StaggerItem>
           ))}
         </StaggerGroup>
-
-        {mockSessions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="rounded-full bg-secondary p-4">
-              <svg
-                className="size-12 text-muted-foreground"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="mt-4 text-lg font-semibold">No sessions available</h3>
-            <p className="mt-2 text-muted-foreground">
-              Check back later for upcoming football sessions.
-            </p>
-          </div>
-        )}
-      </main>
-    </div>
+      )}
+    </main>
   )
 }

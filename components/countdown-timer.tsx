@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useHydrated } from "@/hooks/use-mobile"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { EASE_OUT } from "@/lib/motion"
@@ -40,9 +41,10 @@ export function CountdownTimer({
   className,
   variant = "default" 
 }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => 
-    calculateTimeLeft(targetDate)
-  )
+  // Render a placeholder until hydrated: the server's seconds would never
+  // match the browser's and React would flag a hydration mismatch.
+  const mounted = useHydrated()
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(targetDate))
   const [isUrgent, setIsUrgent] = useState(false)
 
   useEffect(() => {
@@ -66,6 +68,10 @@ export function CountdownTimer({
 
     return () => clearInterval(timer)
   }, [targetDate, onExpire])
+
+  if (!mounted) {
+    return <div className={cn("font-mono text-sm text-muted-foreground", className)} aria-hidden="true">--:--:--</div>
+  }
 
   if (!timeLeft) {
     return (

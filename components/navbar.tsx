@@ -2,8 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, User, LogOut } from "lucide-react"
+import { Menu, X, User, LogOut, Ticket } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { api } from "@/lib/api-client"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,20 +19,33 @@ import { cn } from "@/lib/utils"
 import { DURATION, EASE_OUT } from "@/lib/motion"
 
 interface NavbarProps {
-  isLoggedIn?: boolean
-  userName?: string
+  customer?: { name: string } | null
+  siteName?: string
 }
 
-export function Navbar({ isLoggedIn = false, userName = "Player" }: NavbarProps) {
+export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const pathname = usePathname()
   const reduce = useReducedMotion()
+  const router = useRouter()
+  const isLoggedIn = !!customer
+  const userName = customer?.name.split(" ")[0] ?? "Player"
 
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/sessions", label: "Sessions" },
+    { href: "/about", label: "About" },
+    { href: "/faq", label: "FAQ" },
+    { href: "/contact", label: "Contact" },
   ]
+
+  const signOut = async () => {
+    await api.post("/api/auth/customer/logout").catch(() => null)
+    setMobileMenuOpen(false)
+    router.push("/")
+    router.refresh()
+  }
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/"
@@ -44,10 +59,13 @@ export function Navbar({ isLoggedIn = false, userName = "Player" }: NavbarProps)
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  // Close the mobile menu on route change so it never persists across navigation.
-  useEffect(() => {
+  // Close the mobile menu on route change so it never persists across navigation
+  // (state adjusted during render, per React's "storing previous props" pattern).
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
     setMobileMenuOpen(false)
-  }, [pathname])
+  }
 
   return (
     <header
@@ -60,13 +78,13 @@ export function Navbar({ isLoggedIn = false, userName = "Player" }: NavbarProps)
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">P</span>
+            <span className="text-sm font-black tracking-tight text-primary-foreground">AP</span>
           </div>
-          <span className="text-xl font-bold">PlayPass</span>
+          <span className="text-xl font-bold tracking-tight">{siteName}</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden items-center gap-8 md:flex">
+        <div className="hidden items-center gap-7 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -108,14 +126,15 @@ export function Navbar({ isLoggedIn = false, userName = "Player" }: NavbarProps)
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard">My Tickets</Link>
+                  <Link href="/account/tickets">
+                    <Ticket className="mr-2 size-4" />
+                    My Tickets
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/login" className="text-destructive">
-                    <LogOut className="mr-2 size-4" />
-                    Sign Out
-                  </Link>
+                <DropdownMenuItem onSelect={signOut} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 size-4" />
+                  Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -199,19 +218,19 @@ export function Navbar({ isLoggedIn = false, userName = "Player" }: NavbarProps)
               {isLoggedIn ? (
                 <>
                   <Link
-                    href="/dashboard"
+                    href="/account/tickets"
                     className="block rounded-lg px-3 py-2 text-base font-medium text-muted-foreground hover:bg-secondary"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     My Tickets
                   </Link>
-                  <Link
-                    href="/login"
-                    className="block rounded-lg px-3 py-2 text-base font-medium text-destructive hover:bg-secondary"
-                    onClick={() => setMobileMenuOpen(false)}
+                  <button
+                    type="button"
+                    className="block w-full rounded-lg px-3 py-2 text-left text-base font-medium text-destructive hover:bg-secondary"
+                    onClick={signOut}
                   >
                     Sign Out
-                  </Link>
+                  </button>
                 </>
               ) : (
                 <div className="flex flex-col gap-2 px-3">
