@@ -6,6 +6,7 @@ import { computeCapacity } from "@/lib/domain/constants"
 import { deriveSessionStatus } from "@/lib/domain/session-status"
 import type { SessionInput } from "@/lib/validation/sessions"
 import { recordAudit, type AuditActor } from "./audit"
+import { releaseExpiredHoldsForSession, sweepExpiredHolds } from "./bookings"
 import { getSettings } from "./settings"
 
 export type SessionRecord = schema.Session
@@ -22,9 +23,15 @@ const notDeleted = isNull(schema.sessions.deletedAt)
 // ---------------------------------------------------------------------------
 export async function getSessionById(id: string, opts: { includeDraft?: boolean } = {}) {
   const database = await db()
-  const s = await database.query.sessions.findFirst({ where: and(eq(schema.sessions.id, id), notDeleted) })
+  let s = await database.query.sessions.findFirst({ where: and(eq(schema.sessions.id, id), notDeleted) })
   if (!s) throw new AppError("SESSION_NOT_FOUND", "Session not found")
   if (!opts.includeDraft && s.status === "DRAFT") throw new AppError("SESSION_NOT_FOUND", "Session not found")
+  // Holds count toward "full", so free any that have timed out before deriving status:
+  // otherwise a dead hold would show Sold Out and bounce customers away from checkout.
+  if (s.heldCount > 0) {
+    const freed = await releaseExpiredHoldsForSession(s.id)
+    if (freed) s = { ...s, heldCount: Math.max(0, s.heldCount - freed) }
+  }
   return withStatus(s)
 }
 
@@ -60,6 +67,8 @@ export interface ListSessionsOptions {
 }
 
 export async function listSessions(opts: ListSessionsOptions = {}) {
+  // Throttled: keeps list availability honest even when the housekeeping cron is late or absent.
+  await sweepExpiredHolds()
   const database = await db()
   const page = opts.page ?? 1
   const pageSize = opts.pageSize ?? 20

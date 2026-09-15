@@ -34,6 +34,12 @@ describe("deriveSessionStatus", () => {
   it("is PUBLISHED before the window opens", () => expect(deriveSessionStatus({ ...base, bookingOpensAt: new Date(now.getTime() + H) }, now)).toBe("PUBLISHED"))
   it("is PUBLISHED (closed) after the deadline but before kick-off", () => expect(deriveSessionStatus({ ...base, bookingDeadline: new Date(now.getTime() - H) }, now)).toBe("PUBLISHED"))
   it("is FULL at capacity", () => expect(deriveSessionStatus({ ...base, bookedCount: 32 }, now)).toBe("FULL"))
+  it("is FULL when confirmed + held fill capacity (matches checkBookable)", () => {
+    const heldFull = { ...base, bookedCount: 31, heldCount: 1 }
+    expect(deriveSessionStatus(heldFull, now)).toBe("FULL")
+    expect(checkBookable(heldFull, now)).toEqual({ bookable: false, reason: "SESSION_FULL" })
+  })
+  it("stays OPEN_FOR_BOOKING while at least one slot is free", () => expect(deriveSessionStatus({ ...base, bookedCount: 30, heldCount: 1 }, now)).toBe("OPEN_FOR_BOOKING"))
   it("is IN_PROGRESS between start and end", () => expect(deriveSessionStatus({ ...base, startsAt: new Date(now.getTime() - H), endsAt: new Date(now.getTime() + H) }, now)).toBe("IN_PROGRESS"))
   it("is COMPLETED after the end", () => expect(deriveSessionStatus({ ...base, startsAt: new Date(now.getTime() - 3 * H), endsAt: new Date(now.getTime() - H) }, now)).toBe("COMPLETED"))
   it("keeps admin-controlled states", () => {

@@ -25,7 +25,11 @@ export function deriveSessionStatus(s: SessionTimingLike, now: Date = new Date()
   const endsAt = toDate(s.endsAt)
   if (now >= endsAt) return "COMPLETED"
   if (now >= startsAt) return "IN_PROGRESS"
-  if (s.bookedCount >= s.totalCapacity) return "FULL"
+  // Full means no slot can be reserved right now: confirmed plus held, the same
+  // rule checkBookable enforces. Counting confirmed only let a session read
+  // "Open / Book a slot" while every slot was held. Callers release expired holds
+  // before deriving (see releaseExpiredHoldsForSession / sweepExpiredHolds).
+  if (s.bookedCount + s.heldCount >= s.totalCapacity) return "FULL"
   const opens = toDate(s.bookingOpensAt)
   const deadline = toDate(s.bookingDeadline)
   if (now < opens) return "PUBLISHED"
