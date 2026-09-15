@@ -47,7 +47,7 @@ export function TimeSeriesChart({ data, metric, currency, height = 220 }: { data
           <XAxis dataKey="date" tickFormatter={dayLabel} tick={{ fill: AXIS, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={28} />
           <YAxis tick={{ fill: AXIS, fontSize: 11 }} axisLine={false} tickLine={false} width={metric === "revenue" ? 64 : 32} tickFormatter={(v: number) => (metric === "revenue" ? `${Math.round(v / 100 / 1000)}k` : String(v))} allowDecimals={false} />
           <Tooltip cursor={{ stroke: AXIS, strokeWidth: 1 }} content={({ active, payload, label }) => (active && payload?.length ? <TooltipBox label={dayLabel(String(label))} rows={[[metric === "revenue" ? "Revenue" : "Tickets", fmt(Number(payload[0].value))]]} /> : null)} />
-          <Area type="monotone" dataKey={metric} stroke={MARK} strokeWidth={2} fill={`url(#wash-${metric})`} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)", fill: MARK }} />
+          <Area type="monotone" dataKey={metric} stroke={MARK} strokeWidth={2} fill={`url(#wash-${metric})`} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card-solid)", fill: MARK }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

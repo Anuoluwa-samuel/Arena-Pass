@@ -14,7 +14,7 @@ Rules: components use tokens only — never a raw colour, never a `dark:` overri
 | --- | --- |
 | `--background` / `--card` / `--popover` | Surface steps. Light: 0.985 → white cards. Dark: 0.12 → 0.16 |
 | `--primary` (green) | The single accent: CTAs, live indicators, progress, prices. Light L 0.54 (carries white text, ≥ 4.5:1 as text on white); dark L 0.72 (carries dark text) |
-| `--gradient-page` | Ambient page background, painted once on `body` and fixed to the viewport. Light: near-white with a faint green top glow; dark: a barely-there lift on near-black. Never repeat it on cards |
+| `--gradient-page` | Ambient aurora painted once on `body` and fixed to the viewport: emerald, teal, lime and mint blobs over a mint wash (light) or near-black (dark). It is what the glass shows, so it doubles as the contrast budget. Never repeat it on cards |
 | `--pitch-line` / `--pitch-opacity` | Hero pitch-marking colour and layer strength (light needs more to register on white) |
 | `--chart-mark` / `--chart-grid` / `--chart-axis` / `--chart-cursor` | Recharts colours, passed as `var()` strings |
 | `--secondary` / `--muted` | Quiet fills for inputs, chips, skeletons |
@@ -24,17 +24,17 @@ Rules: components use tokens only — never a raw colour, never a `dark:` overri
 
 ## Glass
 
-One translucent surface, defined once in `app/globals.css` and themed by the `--glass-*` tokens:
+The whole interface is glass over the aurora page gradient. Two settings drive it: `--glass-tint` (10%) and `--glass-blur` (10px).
 
-- **`glass`** — cards and pills: translucent `--glass-bg`, 1px `--glass-border`, a top-edge `--glass-highlight`, soft `--glass-shadow`, `backdrop-filter: blur(var(--glass-blur)) saturate(140%)`. Its shadow goes through Tailwind's `--tw-*` shadow variables, so `ring-*` on the same element composes instead of being replaced. On shadcn `Card`, use `variant="glass"` (it swaps out `bg-card border shadow-sm`) — don't stack the class on a default card.
-- **`glass-bar`** — edge-to-edge bars (sticky headers, footer): frost only; the element keeps its own hairline border.
-- Browsers without `backdrop-filter` get a solid `--glass-fallback`; print strips blur from tickets.
+- **Surface tokens are translucent.** `--card` and `--sidebar` are a 10% tint of their `*-solid` colour; `--popover` is an 80% tint. A global rule in `app/globals.css` gives every element painting `bg-card`, `bg-sidebar` or `bg-popover` a `blur(var(--glass-blur)) saturate(140%)` backdrop, so cards, chart panels, data-table cards, both sidebars, menus and dialogs are glass without per-component work. New components inherit it by using the tokens.
+- **`glass`** (cards, pills, the customer sidebar): the same 10% tint plus a 1px `--glass-border`, top-edge `--glass-highlight` and soft `--glass-shadow`. Its shadow composes with `ring-*` via Tailwind's `--tw-*` variables. On `Card` and `SheetContent`, use `variant="glass"` rather than stacking the class.
+- **`glass-bar`** (sticky headers, footer): 30% tint. Bars sit over scrolling text, so they carry more than panels.
+- **Floating layers** (dropdowns, selects, popovers, tooltips, dialogs, alert dialogs, the mobile menu): `bg-popover`, 80% frost. They cover other content, so 10% would be unreadable.
+- **Fallback:** without `backdrop-filter` support, every surface falls back to its `*-solid` colour. Print forces a white ticket with no blur.
 
-**Where it's used:** public navbar and footer, the hero status pill, `SessionCard`, `DigitalTicket`, the admin header and `StatCard`. The admin `SidebarInset` is transparent so the page gradient reaches admin content.
+**Blur must sit on the element itself.** An element that is transformed, animated or already blurring is a backdrop root; a glass child inside it blurs nothing and the page shows through sharp. Put the variant on the animated container (see `SheetContent variant="glass"`).
 
-**Where it's not:** tables (`data-table.tsx`), forms, dialogs, sheets, popovers, and chart panels stay opaque — legibility beats effect. Never nest glass in glass (the mobile menu inside the glass navbar stays solid). Keep blur layers shallow; stacked blurs cost scroll performance.
-
-**Contrast:** glass sits at 62% (light) / 55% (dark) of `--card` over the low-chroma page gradient, so body text stays ≥ 4.5:1 in both themes. Don't lower the opacity or put glass over imagery without re-checking.
+**Contrast:** at 10% the text effectively sits on the gradient, so the gradient is the contrast budget. Light blobs stay at L ≥ 0.93 and dark blobs at L ≤ 0.26 (dark visibility comes from chroma and coverage, not lightness); light `--muted-foreground` is L 0.44. Re-check both themes before brightening the gradient or lowering the tint further, and never put clear glass directly over photos (the hero image has its own scrim).
 
 ## Typography
 
@@ -59,7 +59,7 @@ Every list has an empty state; every async action has a spinner in its button an
 
 ## Motion
 
-Tokens in `lib/motion.ts` (`EASE_OUT`, `DURATION.fast/base/slow`, `STAGGER`). Reveal/stagger primitives in `components/motion.tsx`. Page transitions via `app/template.tsx`. The only looping animations are the live-dot ping, the hero glow and the "act now" CTA pulse. `prefers-reduced-motion` collapses all CSS animation and every Motion primitive falls back to static.
+Tokens in `lib/motion.ts` (`EASE_OUT`, `DURATION.fast/base/slow`, `STAGGER`). Reveal/stagger primitives in `components/motion.tsx`. Page transitions via `app/template.tsx`. The only looping animations are the live-dot ping, the hero glow, the "act now" CTA pulse, and the WebGL smoke (`SmokeyBackground`) behind the customer auth pages. Signed-in customers get a side navigation instead of the top navbar, and no site footer: the sidebar slides in on first load, springs between 256px and 76px via the chevron beside the logo, which flips direction (state kept in the `ap_sidebar` cookie so the server renders the right width; Ctrl/⌘+B also toggles), labels fade with the width, the active item's pill slides between links via a shared `layoutId`, and the mobile drawer cascades its rows in. All of it drops to instant under reduced motion. The smoke takes its colours from `--primary` / `--background`, is decorative (`aria-hidden`, no pointer events), and renders a single still frame under reduced motion. `prefers-reduced-motion` collapses all CSS animation and every Motion primitive falls back to static.
 
 ## Charts
 
