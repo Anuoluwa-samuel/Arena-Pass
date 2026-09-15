@@ -1,6 +1,28 @@
 import { z } from "zod"
+import { safeNextPath } from "@/lib/safe-next"
 
 const link = z.object({ label: z.string().min(1).max(60), href: z.string().min(1).max(500) })
+
+/**
+ * Image reference. The media library serves uploads same-site at
+ * `/api/media/files/...`, so relative paths must pass (a strict URL check
+ * rejected every uploaded image). External http(s) links are also allowed;
+ * `javascript:`, `data:`, protocol-relative `//host` and backslash tricks are not.
+ */
+export const imageUrlSchema = z
+  .string()
+  .trim()
+  .max(2000)
+  .refine((value) => {
+    if (value.startsWith("/")) return safeNextPath(value, "") === value
+    try {
+      const { protocol } = new URL(value)
+      return protocol === "https:" || protocol === "http:"
+    } catch {
+      return false
+    }
+  }, "Choose an image from the media library or use an http(s) link")
+  .nullable()
 
 export const homepageSchema = z.object({
   hero: z.object({
@@ -10,7 +32,7 @@ export const homepageSchema = z.object({
     description: z.string().max(500),
     primaryCta: link,
     secondaryCta: link,
-    imageUrl: z.string().url().nullable(),
+    imageUrl: imageUrlSchema,
   }),
   howItWorks: z.object({
     title: z.string().min(1).max(120),
@@ -35,7 +57,7 @@ export const aboutSchema = z.object({
   description: z.string().max(3000),
   mission: z.string().max(600),
   vision: z.string().max(600),
-  imageUrl: z.string().url().nullable(),
+  imageUrl: imageUrlSchema,
 })
 export type AboutContent = z.infer<typeof aboutSchema>
 
