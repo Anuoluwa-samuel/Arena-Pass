@@ -1,4 +1,5 @@
 import "server-only"
+import { logger, serializeError } from "@/server/observability/logger"
 import { and, asc, eq, inArray, lt, sql } from "drizzle-orm"
 import { db, schema, rowsOf, type Transaction } from "@/server/db"
 import { AppError, isUniqueViolation } from "@/server/http/errors"
@@ -209,6 +210,42 @@ export async function cancelPendingBooking(id: string, ctx: { actor: AuditActor 
 }
 
 /** Cron: release every expired hold across all sessions. */
+/**
+ * Releases one session's expired holds right away (no-op when there are none).
+ * Called on single-session reads so availability, the displayed status and the
+ * checkout gate never lag behind a hold that has already timed out.
+ */
+export async function releaseExpiredHoldsForSession(sessionId: string) {
+  const database = await db()
+  const now = new Date()
+  return database.transaction(async (tx) => {
+    await tx.select({ id: schema.sessions.id }).from(schema.sessions).where(eq(schema.sessions.id, sessionId)).for("update")
+    return releaseExpiredHolds(tx, sessionId, now)
+  })
+}
+
+const holdSweep = globalThis as unknown as { __arenaPassHoldSweep?: { at: number; running?: Promise<void> } }
+
+/**
+ * Throttled sweep of every expired hold, for list reads. The housekeeping cron
+ * remains the primary mechanism; this keeps listings correct when the cron is
+ * late or not configured (local dev). Runs at most once per `minIntervalMs` per
+ * process and never throws into the caller.
+ */
+export function sweepExpiredHolds(minIntervalMs = 30_000): Promise<void> {
+  const state = (holdSweep.__arenaPassHoldSweep ??= { at: 0 })
+  if (state.running) return state.running
+  if (Date.now() - state.at < minIntervalMs) return Promise.resolve()
+  state.at = Date.now()
+  state.running = expireStaleBookings()
+    .then(() => undefined)
+    .catch((err) => logger.warn("bookings.hold_sweep_failed", { error: serializeError(err) }))
+    .finally(() => {
+      state.running = undefined
+    })
+  return state.running
+}
+
 export async function expireStaleBookings() {
   const database = await db()
   const now = new Date()

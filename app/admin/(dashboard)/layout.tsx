@@ -17,7 +17,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <Suspense>
         <AdminSidebar permissions={user.permissions} siteName={settings.siteName} />
       </Suspense>
-      <SidebarInset className="min-w-0">
+      {/* Transparent so the page gradient reaches admin content and glass stat cards have something to frost. */}
+      <SidebarInset className="min-w-0 bg-transparent">
         <AdminHeader user={{ name: user.name, email: user.email, roleName: user.roleName }} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </SidebarInset>

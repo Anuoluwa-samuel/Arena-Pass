@@ -3,74 +3,90 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Eye, EyeOff, ShieldCheck } from "lucide-react"
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { FloatingField, LoginForm } from "@/components/ui/login-form"
 import { Spinner } from "@/components/ui/spinner"
-import { Reveal } from "@/components/motion"
-import { api, errorMessage } from "@/lib/api-client"
+import { AuthShell } from "@/components/site/auth-shell"
+import { api, ApiError, errorMessage, fieldErrors } from "@/lib/api-client"
+import { safeNextPath } from "@/lib/safe-next"
 
-export function AdminLoginForm() {
+export function AdminLoginForm({ siteName }: { siteName: string }) {
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get("next")?.startsWith("/admin") ? params.get("next")! : "/admin"
+  // Same-site path check first, then keep admins inside the admin area.
+  const candidate = safeNextPath(params.get("next"), "/admin")
+  const next = candidate === "/admin" || candidate.startsWith("/admin/") ? candidate : "/admin"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setErrors({})
     try {
       await api.post("/api/auth/login", { email, password })
       router.push(next)
       router.refresh()
     } catch (err) {
       setLoading(false)
+      if (err instanceof ApiError && err.code === "VALIDATION_ERROR") setErrors(fieldErrors(err))
       toast.error(errorMessage(err))
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Reveal trigger="mount" y={8} className="mb-8 flex items-center justify-center gap-2">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary"><span className="text-sm font-black text-primary-foreground">AP</span></div>
-          <span className="text-2xl font-bold">Arena Pass</span>
-        </Reveal>
-        <Reveal trigger="mount" delay={0.08}>
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-2 flex size-10 items-center justify-center rounded-full bg-primary/10"><ShieldCheck className="size-5 text-primary" /></div>
-              <CardTitle className="text-2xl">Admin sign in</CardTitle>
-              <CardDescription>Restricted to arena staff and administrators</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={submit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input id="password" type={show ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required className="pr-10" />
-                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>
-                      {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>{loading ? <><Spinner className="size-4" />Signing in…</> : "Sign in"}</Button>
-              </form>
-              <p className="mt-6 text-center text-xs text-muted-foreground"><Link href="/" className="hover:text-foreground">← Back to the public site</Link></p>
-            </CardContent>
-          </Card>
-        </Reveal>
-      </div>
-    </div>
+    // No site navbar on admin routes, so the shell fills the whole viewport.
+    <AuthShell siteName={siteName} className="min-h-svh">
+      <LoginForm
+        title={
+          <>
+            <span aria-hidden="true" className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-primary/10">
+              <ShieldCheck className="size-5 text-primary" />
+            </span>
+            Admin sign in
+          </>
+        }
+        description="Restricted to arena staff and administrators"
+        onSubmit={submit}
+        footer={
+          <Link href="/" className="inline-flex items-center gap-1.5 hover:text-foreground">
+            <ArrowLeft className="size-3.5" />
+            Back to the public site
+          </Link>
+        }
+      >
+        <FloatingField id="email" type="email" label="Email address" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required error={errors.email} />
+        <FloatingField
+          id="password"
+          type={show ? "text" : "password"}
+          label="Password"
+          icon={Lock}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+          // Admins have no self-service reset: another admin resets it from the Administrators page.
+          help="Forgot it? Ask a super admin to reset it."
+          error={errors.password}
+          trailing={
+            <button type="button" className="rounded p-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>
+              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          }
+        />
+        <Button type="submit" size="lg" className="group w-full" disabled={loading}>
+          {loading ? (
+            <><Spinner className="size-4" />Signing in…</>
+          ) : (
+            <>Sign in<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></>
+          )}
+        </Button>
+      </LoginForm>
+    </AuthShell>
   )
 }

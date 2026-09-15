@@ -36,15 +36,27 @@ export default async function LandingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
+          {homepage.hero.imageUrl && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={homepage.hero.imageUrl} alt="" aria-hidden="true" fetchPriority="high" className="absolute inset-0 size-full object-cover" />
+              {/* Scrim fading into the page background. Light mode is much thinner so the photo shows through
+                  (a heavy near-white wash washed it out); dark mode keeps its original strength. */}
+              <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-background/30 to-background dark:from-background/85 dark:via-background/75" />
+              {/* Light mode only: a soft glow behind the text block keeps the headline and description readable
+                  over a thinner scrim, fading out so the rest of the image stays vivid. */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_42%_at_50%_48%,color-mix(in_oklch,var(--background)_72%,transparent),transparent_78%)] dark:hidden" />
+            </>
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
           <div className="animate-float-a absolute right-0 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary/10 blur-3xl" />
           <div className="animate-float-b absolute bottom-0 left-0 -z-10 h-[300px] w-[300px] rounded-full bg-primary/5 blur-3xl" />
-          <div className="pitch-lines absolute inset-0 opacity-[0.07]" aria-hidden="true" />
+          <div className="pitch-lines absolute inset-0 [opacity:var(--pitch-opacity)]" aria-hidden="true" />
         </div>
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
           <StaggerGroup trigger="mount" stagger={0.12} delayChildren={0.05} className="mx-auto max-w-2xl text-center">
             {homepage.hero.badge && (
-              <StaggerItem className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+              <StaggerItem className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-primary">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex size-2 rounded-full bg-primary" />
@@ -58,7 +70,9 @@ export default async function LandingPage() {
               </h1>
             </StaggerItem>
             <StaggerItem>
-              <p className="mt-6 text-pretty text-lg leading-relaxed text-muted-foreground">{homepage.hero.description}</p>
+              {/* Over a photo in light mode the muted grey dips below 4.5:1, so the description uses the solid
+                  dark text colour there; dark mode (and the no-image hero) keep the muted tone. */}
+              <p className={`mt-6 text-pretty text-lg leading-relaxed ${homepage.hero.imageUrl ? "text-secondary-foreground dark:text-muted-foreground" : "text-muted-foreground"}`}>{homepage.hero.description}</p>
             </StaggerItem>
             <StaggerItem className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Magnetic>

@@ -1,6 +1,10 @@
 import { formatDate, formatMoney, formatTimeRange } from "@/lib/format"
 
-function layout(title: string, body: string, appName: string) {
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!)
+}
+
+function layout(title: string, body: string, appName: string, footer = `You are receiving this because you booked a session with ${appName}.`) {
   return `<!doctype html><html><body style="margin:0;background:#0f1115;font-family:Inter,Segoe UI,Arial,sans-serif;color:#e8eaed">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px">
     <div style="font-weight:700;font-size:20px;margin-bottom:24px"><span style="display:inline-block;background:#22c55e;color:#0f1115;border-radius:8px;padding:4px 8px;margin-right:8px">AP</span>${appName}</div>
@@ -8,7 +12,7 @@ function layout(title: string, body: string, appName: string) {
       <h1 style="font-size:22px;margin:0 0 12px">${title}</h1>
       ${body}
     </div>
-    <p style="color:#8b919c;font-size:12px;margin-top:24px">You are receiving this because you booked a session with ${appName}.</p>
+    <p style="color:#8b919c;font-size:12px;margin-top:24px">${footer}</p>
   </div></body></html>`
 }
 
@@ -72,4 +76,19 @@ export function sessionReminderEmail(p: { appName: string; customerName: string;
     p.appName
   )
   return { subject, html, text: `Reminder: ${p.sessionTitle} on ${formatDate(p.startsAt)} at ${p.venue}. Ticket: ${p.ticketUrl}` }
+}
+
+export function passwordResetEmail(p: { appName: string; customerName: string; resetUrl: string; expiresInMinutes: number }) {
+  const subject = `Reset your ${p.appName} password`
+  const name = escapeHtml(p.customerName)
+  const html = layout(
+    "Reset your password",
+    `<p style="color:#b5bac4;margin:0 0 20px">Hi ${name}, we received a request to reset the password for your account.</p>
+    <a href="${p.resetUrl}" style="display:block;background:#22c55e;color:#0f1115;text-decoration:none;text-align:center;padding:14px;border-radius:10px;font-weight:600">Choose a new password</a>
+    <p style="color:#8b919c;font-size:13px;margin-top:16px">This link expires in ${p.expiresInMinutes} minutes and can only be used once. If you didn't ask for this, you can ignore this email — your password won't change.</p>`,
+    p.appName,
+    `You are receiving this because a password reset was requested for your ${p.appName} account.`
+  )
+  const text = `Hi ${p.customerName},\n\nReset your ${p.appName} password: ${p.resetUrl}\n\nThis link expires in ${p.expiresInMinutes} minutes and can only be used once. If you didn't ask for this, ignore this email.\n`
+  return { subject, html, text }
 }

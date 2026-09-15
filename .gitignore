@@ -11,9 +11,10 @@ out/
 .env.*
 !.env.example
 
-# Local data (embedded Postgres, uploads)
-.data/
-storage/
+# Local data (embedded Postgres, uploads). Anchored to the repo root: an unanchored
+# `storage/` also matched the source folder server/storage/ and kept it out of git.
+/.data/
+/storage/
 
 # Testing
 coverage/

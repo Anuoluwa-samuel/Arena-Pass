@@ -37,9 +37,12 @@ Mutations from the browser are cookie-authenticated and must be same-origin (Ori
 | --- | --- |
 | POST | `/api/auth/login` · `/api/auth/logout` · GET `/api/auth/me` (admin) |
 | POST | `/api/auth/customer/signup` · `/customer/login` · `/customer/logout` · GET `/customer/me` |
+| POST | `/api/auth/customer/password/forgot` `{ email }` — always the same 200 response; emails a single-use link valid for 30 minutes |
+| POST | `/api/auth/customer/password/reset` `{ token, password }` — sets the password, revokes every session, signs in. `INVALID_RESET_TOKEN` if used/expired |
+| GET | `/api/auth/customer/google?next=` → Google consent · `/customer/google/callback` (OIDC code flow + PKCE). Only when `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set; failures redirect to `/login?error=` |
 | GET | `/api/me/tickets` (customer) |
 
-Login endpoints are rate limited per IP and per email.
+Login endpoints are rate limited per IP and per email. Reset requests are limited per IP and per email; reset submissions and Google callbacks per IP.
 
 ## Admin (`/api/admin/*`, permission in brackets)
 

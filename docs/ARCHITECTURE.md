@@ -50,7 +50,9 @@ Even if the service were bypassed, the database enforces: capacity CHECK, one bo
 
 Allocation is round-robin (slot 1 of every team, then slot 2 …) so partially sold sessions still have balanced teams; a customer may request a preferred team.
 
-Holds expire after `bookingHoldMinutes` (default 10). Expiry is applied lazily inside the next booking transaction and by the cron endpoint.
+Holds expire after `bookingHoldMinutes` (default 10). Expiry is applied lazily in three places: inside the next booking transaction, on single-session reads (`getSessionById` releases that session's expired holds when `held_count > 0`, which also covers the detail page and the checkout gate), and by a throttled sweep before session lists (`sweepExpiredHolds`, at most every 30s per process). The cron endpoint remains the primary mechanism; the lazy paths keep availability correct when it is late or not configured.
+
+A session reads `FULL` when confirmed plus held slots reach capacity (`booked_count + held_count >= total_capacity`), the same rule `checkBookable` enforces, so cards, the detail page and the booking service always agree. The stored `FULL` written by payment verification still counts confirmed bookings only.
 
 ## Payment flow
 

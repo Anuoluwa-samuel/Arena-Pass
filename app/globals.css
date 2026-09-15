@@ -3,51 +3,102 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* PlayPass - Dark + Green Sports Theme */
+/* Arena Pass runs two themes from one token set.
+   Light: whitish gradient surfaces, deep pitch green.
+   Dark:  floodlit pitch — near-black surfaces, one vivid green.
+   Light is the fallback when no class is set; `.dark` is applied by next-themes. */
 :root {
-  --background: oklch(0.12 0.01 260);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.16 0.01 260);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.16 0.01 260);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.72 0.19 145);
-  --primary-foreground: oklch(0.12 0.01 260);
-  --secondary: oklch(0.22 0.01 260);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.72 0.19 145);
-  --accent-foreground: oklch(0.12 0.01 260);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.28 0.01 260);
-  --input: oklch(0.22 0.01 260);
-  --ring: oklch(0.72 0.19 145);
-  --chart-1: oklch(0.72 0.19 145);
-  --chart-2: oklch(0.6 0.15 145);
-  --chart-3: oklch(0.5 0.12 145);
-  --chart-4: oklch(0.8 0.15 145);
-  --chart-5: oklch(0.45 0.1 145);
+  --background: oklch(0.985 0.005 155);
+  --foreground: oklch(0.22 0.02 260);
+  /* Surfaces are glass. `*-solid` holds the opaque colour (fallback when
+     backdrop-filter is unsupported); the public token is a translucent tint of
+     it. Anything painting bg-card / bg-sidebar / bg-popover gets the blur from
+     the rule after @theme, so new components inherit the look automatically. */
+  --glass-tint: 10%;
+  --glass-blur: 10px;
+  --card-solid: oklch(1 0 0);
+  --card: color-mix(in oklch, var(--card-solid) var(--glass-tint), transparent);
+  --card-foreground: oklch(0.22 0.02 260);
+  /* Floating layers (menus, dialogs, tooltips) cover other content, so they frost harder. */
+  --popover-solid: oklch(1 0 0);
+  --popover: color-mix(in oklch, var(--popover-solid) 80%, transparent);
+  --popover-foreground: oklch(0.22 0.02 260);
+  /* Deeper than the dark-theme green: L 0.72 cannot carry white text or pass
+     4.5:1 as text on white, so light drops to L 0.54 and keeps the same hue. */
+  --primary: oklch(0.54 0.15 150);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.008 155);
+  --secondary-foreground: oklch(0.26 0.02 260);
+  --muted: oklch(0.96 0.008 155);
+  /* 0.44 (was 0.47): keeps ≥ 4.5:1 over the brightest gradient blob seen through 10% glass. */
+  --muted-foreground: oklch(0.44 0.02 260);
+  --accent: oklch(0.54 0.15 150);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.52 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.008 250);
+  --input: oklch(0.93 0.006 250);
+  --ring: oklch(0.54 0.15 150);
+  --chart-1: oklch(0.54 0.15 150);
+  --chart-2: oklch(0.63 0.14 150);
+  --chart-3: oklch(0.71 0.12 150);
+  --chart-4: oklch(0.46 0.13 150);
+  --chart-5: oklch(0.79 0.09 150);
   --radius: 0.75rem;
-  --sidebar: oklch(0.14 0.01 260);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.72 0.19 145);
-  --sidebar-primary-foreground: oklch(0.12 0.01 260);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.28 0.01 260);
-  --sidebar-ring: oklch(0.72 0.19 145);
-  --success: oklch(0.72 0.19 145);
-  --warning: oklch(0.8 0.15 85);
+  --sidebar-solid: oklch(0.975 0.008 155);
+  --sidebar: color-mix(in oklch, var(--sidebar-solid) var(--glass-tint), transparent);
+  --sidebar-foreground: oklch(0.22 0.02 260);
+  --sidebar-primary: oklch(0.54 0.15 150);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.01 155);
+  --sidebar-accent-foreground: oklch(0.24 0.02 260);
+  --sidebar-border: oklch(0.9 0.008 250);
+  --sidebar-ring: oklch(0.54 0.15 150);
+  --success: oklch(0.54 0.15 150);
+  --warning: oklch(0.62 0.14 70);
+
+  /* Ambient page background. One token, two themes — the body rule never changes. */
+  /* Aurora: emerald, teal, lime and mint blobs over a pale mint wash. Blobs stay
+     at L ≥ 0.93 so body and muted text keep their contrast through clear glass. */
+  --gradient-page:
+    radial-gradient(60% 50% at 8% 0%, oklch(0.93 0.06 155 / 0.95), transparent 70%),
+    radial-gradient(50% 45% at 96% 12%, oklch(0.94 0.05 195 / 0.9), transparent 70%),
+    radial-gradient(55% 50% at 82% 96%, oklch(0.95 0.06 125 / 0.85), transparent 70%),
+    radial-gradient(45% 40% at 4% 88%, oklch(0.94 0.045 175 / 0.8), transparent 70%),
+    radial-gradient(35% 30% at 50% 50%, oklch(0.96 0.03 165 / 0.6), transparent 70%),
+    linear-gradient(160deg, oklch(0.985 0.012 160) 0%, oklch(0.965 0.02 170) 100%);
+
+  /* Hero pitch markings: colour and strength are themed, the geometry is not. */
+  --pitch-line: color-mix(in oklch, var(--primary) 85%, transparent);
+  --pitch-opacity: 0.16;
+
+  /* Recharts takes plain colour strings, so chart marks need their own tokens
+     rather than Tailwind classes. Contrast-tuned per theme. */
+  --chart-mark: oklch(0.54 0.15 150);
+  --chart-grid: oklch(0.91 0.008 250);
+  --chart-axis: oklch(0.47 0.02 260);
+  --chart-cursor: oklch(0.95 0.008 155);
+
+  /* Glass surface (see .glass / .glass-bar below). Light glass needs a visible
+     edge: a white rim disappears on a whitish page, so the border is a real
+     neutral and the top highlight does the "glass" work. */
+  --glass-bg: var(--card);
+  /* Sticky bars sit over scrolling text, so they carry more tint than panels. */
+  --glass-bar-bg: color-mix(in oklch, var(--background) 30%, transparent);
+  --glass-border: color-mix(in oklch, var(--border) 85%, transparent);
+  --glass-highlight: oklch(1 0 0 / 0.75);
+  --glass-shadow: 0 10px 30px -12px oklch(0.35 0.04 160 / 0.18);
+  --glass-fallback: var(--card-solid);
 }
 
 .dark {
   --background: oklch(0.12 0.01 260);
   --foreground: oklch(0.98 0 0);
-  --card: oklch(0.16 0.01 260);
+  --card-solid: oklch(0.16 0.01 260);
+  --card: color-mix(in oklch, var(--card-solid) var(--glass-tint), transparent);
   --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.16 0.01 260);
+  --popover-solid: oklch(0.16 0.01 260);
+  --popover: color-mix(in oklch, var(--popover-solid) 80%, transparent);
   --popover-foreground: oklch(0.98 0 0);
   --primary: oklch(0.72 0.19 145);
   --primary-foreground: oklch(0.12 0.01 260);
@@ -67,7 +118,8 @@
   --chart-3: oklch(0.5 0.12 145);
   --chart-4: oklch(0.8 0.15 145);
   --chart-5: oklch(0.45 0.1 145);
-  --sidebar: oklch(0.14 0.01 260);
+  --sidebar-solid: oklch(0.14 0.01 260);
+  --sidebar: color-mix(in oklch, var(--sidebar-solid) var(--glass-tint), transparent);
   --sidebar-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.72 0.19 145);
   --sidebar-primary-foreground: oklch(0.12 0.01 260);
@@ -77,6 +129,31 @@
   --sidebar-ring: oklch(0.72 0.19 145);
   --success: oklch(0.72 0.19 145);
   --warning: oklch(0.8 0.15 85);
+
+  /* Blobs capped at L 0.26 (muted text L 0.65 stays ≈ 4.8:1 through clear glass).
+     Visibility comes from chroma and coverage, not lightness. */
+  --gradient-page:
+    radial-gradient(70% 60% at 6% 0%, oklch(0.26 0.09 155 / 0.95), transparent 72%),
+    radial-gradient(60% 55% at 98% 10%, oklch(0.25 0.07 200 / 0.9), transparent 72%),
+    radial-gradient(65% 60% at 85% 98%, oklch(0.26 0.08 135 / 0.9), transparent 72%),
+    radial-gradient(55% 50% at 2% 90%, oklch(0.24 0.06 175 / 0.85), transparent 72%),
+    radial-gradient(45% 40% at 50% 50%, oklch(0.2 0.045 165 / 0.7), transparent 72%),
+    linear-gradient(160deg, oklch(0.14 0.02 240) 0%, oklch(0.12 0.025 190) 100%);
+
+  --pitch-line: color-mix(in oklch, var(--primary) 60%, transparent);
+  --pitch-opacity: 0.07;
+
+  --chart-mark: #16a34a;
+  --chart-grid: oklch(0.24 0.01 260);
+  --chart-axis: oklch(0.6 0 0);
+  --chart-cursor: oklch(0.2 0.01 260);
+
+  --glass-bg: var(--card);
+  --glass-bar-bg: color-mix(in oklch, var(--background) 30%, transparent);
+  --glass-border: oklch(1 0 0 / 0.1);
+  --glass-highlight: oklch(1 0 0 / 0.07);
+  --glass-shadow: 0 10px 30px -12px oklch(0 0 0 / 0.55);
+  --glass-fallback: var(--card-solid);
 }
 
 @theme inline {
@@ -128,7 +205,57 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* The ambient gradient is painted once, fixed to the viewport, so long
+       pages don't stretch it and nothing under it has to repeat the effect. */
+    background-image: var(--gradient-page);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
+}
+
+/* Glass — the one translucent surface. Tokens above carry the per-theme values.
+   Rules (docs/DESIGN.md): never nest glass in glass; dense data surfaces
+   (tables, forms, dialogs) stay opaque.
+   Shadows go through Tailwind's own --tw-* shadow variables so `ring-*`
+   utilities on the same element compose with the glass edge instead of
+   replacing it. */
+@utility glass {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  --tw-inset-shadow: inset 0 1px 0 0 var(--glass-highlight);
+  --tw-shadow: var(--glass-shadow);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* Edge-to-edge bars (sticky headers, footer): frost only — the element keeps
+   its own hairline border and no lift shadow. */
+@utility glass-bar {
+  background-color: var(--glass-bar-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* The surface tokens are translucent, so every element painting them frosts what
+   is behind it: cards, chart panels, table cards, sidebars, menus and dialogs.
+   Glass only reads when blur sits on the element itself; a glass child inside a
+   transformed or animated parent blurs nothing (see DESIGN.md). */
+.bg-card,
+.bg-popover,
+.bg-sidebar {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* No backdrop-filter support: fall back to solid surfaces so text never sits
+   on an unblurred, busy background. Unlayered, so it beats the utilities. */
+@supports not ((backdrop-filter: blur(0)) or (-webkit-backdrop-filter: blur(0))) {
+  .glass { background-color: var(--glass-fallback); }
+  .glass-bar { background-color: var(--background); }
+  .bg-card { background-color: var(--card-solid); }
+  .bg-popover { background-color: var(--popover-solid); }
+  .bg-sidebar { background-color: var(--sidebar-solid); }
 }
 
 /* Gentle breathing glow — used sparingly to signal "act now" (e.g. the Buy
@@ -191,8 +318,8 @@
 /* Faint pitch markings behind the hero — brand texture, never competes with content. */
 .pitch-lines {
   background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--primary) 60%, transparent) 1px, transparent 1px),
-    radial-gradient(circle at center, transparent 118px, color-mix(in oklch, var(--primary) 60%, transparent) 119px, transparent 121px);
+    linear-gradient(to right, var(--pitch-line) 1px, transparent 1px),
+    radial-gradient(circle at center, transparent 118px, var(--pitch-line) 119px, transparent 121px);
   background-size: 100% 100%, 100% 100%;
   background-position: center, center;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
@@ -200,7 +327,7 @@
 
 /* Ticket print styles: only the ticket, on white. */
 @media print {
-  body { background: white !important; color: black !important; }
+  body { background: white !important; background-image: none !important; color: black !important; }
   .print-hidden { display: none !important; }
-  .print-ticket { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; color: black !important; }
+  .print-ticket { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; color: black !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }

@@ -3,7 +3,7 @@ import { Mail, MapPin, Phone } from "lucide-react"
 
 export function SiteFooter({ siteName, contact }: { siteName: string; contact: { email: string; phone: string; address: string; instagram: string; twitter: string } }) {
   return (
-    <footer className="border-t border-border bg-background/60">
+    <footer className="glass-bar border-t border-border">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>

@@ -47,6 +47,8 @@ export interface RateLimitRule {
 export const RATE_LIMITS = {
   login: { name: "auth.login", limit: 10, windowMs: 15 * 60_000 },
   signup: { name: "auth.signup", limit: 5, windowMs: 60 * 60_000 },
+  passwordResetRequest: { name: "auth.password_reset.request", limit: 5, windowMs: 15 * 60_000 },
+  passwordResetSubmit: { name: "auth.password_reset.submit", limit: 10, windowMs: 15 * 60_000 },
   booking: { name: "booking.create", limit: 20, windowMs: 10 * 60_000 },
   validate: { name: "ticket.validate", limit: 120, windowMs: 60_000 },
   publicRead: { name: "public.read", limit: 300, windowMs: 60_000 },

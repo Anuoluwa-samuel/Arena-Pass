@@ -10,6 +10,15 @@ import { ToneBadge } from "@/components/shared/status-badge"
 import { api, ApiError, errorMessage, fieldErrors } from "@/lib/api-client"
 import { formatRelative } from "@/lib/format"
 
+/** "hero.imageUrl" → "Hero image url"; "howItWorks.steps.0.title" → "How it works steps 1 title". */
+function fieldLabel(path: string) {
+  const text = path
+    .split(".")
+    .map((part) => (/^\d+$/.test(part) ? String(Number(part) + 1) : part.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase()))
+    .join(" ")
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 interface Props<T> {
   slug: string
   initialDraft: T
@@ -51,8 +60,16 @@ export function CmsPageEditor<T>({ slug, initialDraft, hasUnpublishedChanges, pu
       if (!silent) toast.success("Draft saved")
       return true
     } catch (err) {
-      if (err instanceof ApiError && err.code === "VALIDATION_ERROR") setErrors(fieldErrors(err))
-      toast.error(errorMessage(err))
+      if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
+        const fields = fieldErrors(err)
+        setErrors(fields)
+        // Name the failing field: a generic "check the highlighted fields" is a dead end
+        // whenever that field doesn't render its error inline.
+        const [path, message] = Object.entries(fields)[0] ?? []
+        toast.error(path ? `${fieldLabel(path)}: ${message}` : errorMessage(err))
+      } else {
+        toast.error(errorMessage(err))
+      }
       return false
     } finally {
       setSaving(false)

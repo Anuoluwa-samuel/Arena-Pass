@@ -8,9 +8,12 @@ import { formatMoney } from "@/lib/format"
  * 2px lines with a 10% wash, thin bars capped at 24px with rounded data
  * ends, hairline grid, crosshair tooltip, text in text tokens.
  */
-const MARK = "#16a34a" // deep green: ≥ 5:1 on the dark surface
-const GRID = "oklch(0.24 0.01 260)"
-const AXIS = "oklch(0.6 0 0)"
+// Themed in app/globals.css (--chart-mark/grid/axis/cursor). SVG presentation
+// attributes resolve var() like any CSS value, so marks re-colour on theme
+// change with no re-render. Each theme's mark is tuned to ≥ 5:1 on its surface.
+const MARK = "var(--chart-mark)"
+const GRID = "var(--chart-grid)"
+const AXIS = "var(--chart-axis)"
 
 function dayLabel(iso: string) {
   const d = new Date(iso + "T00:00:00")
@@ -44,7 +47,7 @@ export function TimeSeriesChart({ data, metric, currency, height = 220 }: { data
           <XAxis dataKey="date" tickFormatter={dayLabel} tick={{ fill: AXIS, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={28} />
           <YAxis tick={{ fill: AXIS, fontSize: 11 }} axisLine={false} tickLine={false} width={metric === "revenue" ? 64 : 32} tickFormatter={(v: number) => (metric === "revenue" ? `${Math.round(v / 100 / 1000)}k` : String(v))} allowDecimals={false} />
           <Tooltip cursor={{ stroke: AXIS, strokeWidth: 1 }} content={({ active, payload, label }) => (active && payload?.length ? <TooltipBox label={dayLabel(String(label))} rows={[[metric === "revenue" ? "Revenue" : "Tickets", fmt(Number(payload[0].value))]]} /> : null)} />
-          <Area type="monotone" dataKey={metric} stroke={MARK} strokeWidth={2} fill={`url(#wash-${metric})`} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card)", fill: MARK }} />
+          <Area type="monotone" dataKey={metric} stroke={MARK} strokeWidth={2} fill={`url(#wash-${metric})`} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--card-solid)", fill: MARK }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -62,7 +65,7 @@ export function HorizontalBars({ data, valueKey, labelKey, height, max }: { data
           <CartesianGrid stroke={GRID} strokeWidth={1} horizontal={false} />
           <XAxis type="number" hide domain={[0, max ?? "auto"]} />
           <YAxis type="category" dataKey={labelKey} width={170} tick={{ fill: AXIS, fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v: string) => (v.length > 24 ? v.slice(0, 23) + "…" : v)} />
-          <Tooltip cursor={{ fill: "oklch(0.2 0.01 260)" }} content={({ active, payload }) => (active && payload?.length ? <TooltipBox label={String(payload[0].payload[labelKey])} rows={[["Value", display(payload[0].payload)]]} /> : null)} />
+          <Tooltip cursor={{ fill: "var(--chart-cursor)" }} content={({ active, payload }) => (active && payload?.length ? <TooltipBox label={String(payload[0].payload[labelKey])} rows={[["Value", display(payload[0].payload)]]} /> : null)} />
           <Bar dataKey={valueKey} maxBarSize={20} radius={[0, 4, 4, 0]}>
             {data.map((_, i) => (
               <Cell key={i} fill={MARK} />

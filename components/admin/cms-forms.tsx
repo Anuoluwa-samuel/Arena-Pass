@@ -26,25 +26,25 @@ export function HomepageEditor({ draft, meta }: { draft: HomepageContent; meta: 
               <Field label="Title" error={errors["hero.title"]}><Input value={d.hero.title} onChange={(e) => set({ ...d, hero: { ...d.hero, title: e.target.value } })} /></Field>
               <Field label="Highlighted line" hint="Rendered in green" error={errors["hero.highlight"]}><Input value={d.hero.highlight} onChange={(e) => set({ ...d, hero: { ...d.hero, highlight: e.target.value } })} /></Field>
               <Field label="Description" className="sm:col-span-2" error={errors["hero.description"]}><Textarea rows={3} value={d.hero.description} onChange={(e) => set({ ...d, hero: { ...d.hero, description: e.target.value } })} /></Field>
-              <Field label="Primary button label"><Input value={d.hero.primaryCta.label} onChange={(e) => set({ ...d, hero: { ...d.hero, primaryCta: { ...d.hero.primaryCta, label: e.target.value } } })} /></Field>
-              <Field label="Primary button link"><Input value={d.hero.primaryCta.href} onChange={(e) => set({ ...d, hero: { ...d.hero, primaryCta: { ...d.hero.primaryCta, href: e.target.value } } })} /></Field>
-              <Field label="Secondary button label"><Input value={d.hero.secondaryCta.label} onChange={(e) => set({ ...d, hero: { ...d.hero, secondaryCta: { ...d.hero.secondaryCta, label: e.target.value } } })} /></Field>
-              <Field label="Secondary button link"><Input value={d.hero.secondaryCta.href} onChange={(e) => set({ ...d, hero: { ...d.hero, secondaryCta: { ...d.hero.secondaryCta, href: e.target.value } } })} /></Field>
-              <Field label="Hero image" hint="Optional" className="sm:col-span-2"><MediaPicker value={d.hero.imageUrl} onChange={(url) => set({ ...d, hero: { ...d.hero, imageUrl: url } })} /></Field>
+              <Field label="Primary button label" error={errors["hero.primaryCta.label"]}><Input value={d.hero.primaryCta.label} onChange={(e) => set({ ...d, hero: { ...d.hero, primaryCta: { ...d.hero.primaryCta, label: e.target.value } } })} /></Field>
+              <Field label="Primary button link" error={errors["hero.primaryCta.href"]}><Input value={d.hero.primaryCta.href} onChange={(e) => set({ ...d, hero: { ...d.hero, primaryCta: { ...d.hero.primaryCta, href: e.target.value } } })} /></Field>
+              <Field label="Secondary button label" error={errors["hero.secondaryCta.label"]}><Input value={d.hero.secondaryCta.label} onChange={(e) => set({ ...d, hero: { ...d.hero, secondaryCta: { ...d.hero.secondaryCta, label: e.target.value } } })} /></Field>
+              <Field label="Secondary button link" error={errors["hero.secondaryCta.href"]}><Input value={d.hero.secondaryCta.href} onChange={(e) => set({ ...d, hero: { ...d.hero, secondaryCta: { ...d.hero.secondaryCta, href: e.target.value } } })} /></Field>
+              <Field label="Hero image" hint="Optional" className="sm:col-span-2" error={errors["hero.imageUrl"]}><MediaPicker value={d.hero.imageUrl} onChange={(url) => set({ ...d, hero: { ...d.hero, imageUrl: url } })} /></Field>
             </CardContent>
           </Card>
           <Card>
             <CardHeader><CardTitle className="text-base">Featured sessions</CardTitle></CardHeader>
             <CardContent>
-              <Field label="How many upcoming sessions to feature" hint="0 hides the section"><Input type="number" min={0} max={12} value={d.featuredSessionsCount} onChange={(e) => set({ ...d, featuredSessionsCount: Number(e.target.value) })} className="w-32" /></Field>
+              <Field label="How many upcoming sessions to feature" hint="0 hides the section" error={errors.featuredSessionsCount}><Input type="number" min={0} max={12} value={d.featuredSessionsCount} onChange={(e) => set({ ...d, featuredSessionsCount: Number(e.target.value) })} className="w-32" /></Field>
             </CardContent>
           </Card>
           <Card>
             <CardHeader><CardTitle className="text-base">How it works</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Title"><Input value={d.howItWorks.title} onChange={(e) => set({ ...d, howItWorks: { ...d.howItWorks, title: e.target.value } })} /></Field>
-                <Field label="Subtitle"><Input value={d.howItWorks.subtitle} onChange={(e) => set({ ...d, howItWorks: { ...d.howItWorks, subtitle: e.target.value } })} /></Field>
+                <Field label="Title" error={errors["howItWorks.title"]}><Input value={d.howItWorks.title} onChange={(e) => set({ ...d, howItWorks: { ...d.howItWorks, title: e.target.value } })} /></Field>
+                <Field label="Subtitle" error={errors["howItWorks.subtitle"]}><Input value={d.howItWorks.subtitle} onChange={(e) => set({ ...d, howItWorks: { ...d.howItWorks, subtitle: e.target.value } })} /></Field>
               </div>
               <div className="space-y-3">
                 {d.howItWorks.steps.map((step, i) => (
@@ -62,10 +62,10 @@ export function HomepageEditor({ draft, meta }: { draft: HomepageContent; meta: 
           <Card>
             <CardHeader><CardTitle className="text-base">Call to action</CardTitle></CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Field label="Title"><Input value={d.cta.title} onChange={(e) => set({ ...d, cta: { ...d.cta, title: e.target.value } })} /></Field>
-              <Field label="Description"><Input value={d.cta.description} onChange={(e) => set({ ...d, cta: { ...d.cta, description: e.target.value } })} /></Field>
-              <Field label="Button label"><Input value={d.cta.buttonLabel} onChange={(e) => set({ ...d, cta: { ...d.cta, buttonLabel: e.target.value } })} /></Field>
-              <Field label="Button link"><Input value={d.cta.buttonHref} onChange={(e) => set({ ...d, cta: { ...d.cta, buttonHref: e.target.value } })} /></Field>
+              <Field label="Title" error={errors["cta.title"]}><Input value={d.cta.title} onChange={(e) => set({ ...d, cta: { ...d.cta, title: e.target.value } })} /></Field>
+              <Field label="Description" error={errors["cta.description"]}><Input value={d.cta.description} onChange={(e) => set({ ...d, cta: { ...d.cta, description: e.target.value } })} /></Field>
+              <Field label="Button label" error={errors["cta.buttonLabel"]}><Input value={d.cta.buttonLabel} onChange={(e) => set({ ...d, cta: { ...d.cta, buttonLabel: e.target.value } })} /></Field>
+              <Field label="Button link" error={errors["cta.buttonHref"]}><Input value={d.cta.buttonHref} onChange={(e) => set({ ...d, cta: { ...d.cta, buttonHref: e.target.value } })} /></Field>
             </CardContent>
           </Card>
         </>
@@ -87,7 +87,7 @@ export function AboutEditor({ draft, meta }: { draft: AboutContent; meta: Meta }
               <Field label="Mission" error={errors.mission}><Textarea rows={3} value={d.mission} onChange={(e) => set({ ...d, mission: e.target.value })} /></Field>
               <Field label="Vision" error={errors.vision}><Textarea rows={3} value={d.vision} onChange={(e) => set({ ...d, vision: e.target.value })} /></Field>
             </div>
-            <Field label="Image" hint="Optional"><MediaPicker value={d.imageUrl} onChange={(url) => set({ ...d, imageUrl: url })} /></Field>
+            <Field label="Image" hint="Optional" error={errors.imageUrl}><MediaPicker value={d.imageUrl} onChange={(url) => set({ ...d, imageUrl: url })} /></Field>
           </CardContent>
         </Card>
       )}

@@ -22,7 +22,8 @@ async function bookFirstOpenSession(page: Page, email: string) {
   await page.getByRole("button", { name: "Pay successfully" }).click()
 
   await expect(page).toHaveURL(/\/tickets\/AP-\d{4}-\d{6}/, { timeout: 30_000 })
-  await expect(page.getByText("You're in!")).toBeVisible()
+  // By role: Next's route announcer also contains the page title text.
+  await expect(page.getByRole("heading", { name: "You're in!" })).toBeVisible()
   const ticketNumber = page.url().match(/AP-\d{4}-\d{6}/)![0]
   await expect(page.getByAltText(`QR code for ticket ${ticketNumber}`)).toBeVisible()
   return ticketNumber

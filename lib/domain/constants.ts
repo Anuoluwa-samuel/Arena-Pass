@@ -189,6 +189,8 @@ export const ERROR_CODES = [
   "INVALID_CREDENTIALS",
   "ACCOUNT_DISABLED",
   "EMAIL_TAKEN",
+  "INVALID_RESET_TOKEN",
+  "OAUTH_FAILED",
   "INTERNAL_ERROR",
 ] as const
 export type ErrorCode = (typeof ERROR_CODES)[number]

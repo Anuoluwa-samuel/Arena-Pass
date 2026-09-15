@@ -120,14 +120,19 @@ export const customers = pgTable(
     email: text("email").notNull(),
     name: text("name").notNull(),
     phone: text("phone"),
-    /** Null for guest checkout; set when the customer creates an account. */
+    /** Null for guest checkout and Google-only accounts; set when the customer chooses a password. */
     passwordHash: text("password_hash"),
+    /** Google's stable account id (`sub`). Linked on first Google sign-in; survives email changes. */
+    googleSub: text("google_sub"),
     isActive: boolean("is_active").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (t) => [uniqueIndex("customers_email_lower_idx").on(sql`lower(${t.email})`)]
+  (t) => [
+    uniqueIndex("customers_email_lower_idx").on(sql`lower(${t.email})`),
+    uniqueIndex("customers_google_sub_idx").on(t.googleSub),
+  ]
 )
 
 /** Server-side sessions for both admin users and customers. */
@@ -145,6 +150,23 @@ export const authSessions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("auth_sessions_principal_idx").on(t.principalType, t.principalId)]
+)
+
+/** Single-use customer password reset links. Only the SHA-256 of the token is stored. */
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    ipAddress: text("ip_address"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("password_reset_tokens_customer_idx").on(t.customerId)]
 )
 
 // ---------------------------------------------------------------------------
@@ -599,6 +621,7 @@ export type Arena = typeof arenas.$inferSelect
 export type Role = typeof roles.$inferSelect
 export type User = typeof users.$inferSelect
 export type Customer = typeof customers.$inferSelect
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
 export type AuthSession = typeof authSessions.$inferSelect
 export type Session = typeof sessions.$inferSelect
 export type NewSession = typeof sessions.$inferInsert

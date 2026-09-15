@@ -21,6 +21,7 @@ export function SessionCard({ session, className }: { session: PublicSession; cl
 
   return (
     <Card
+      variant="glass"
       className={cn(
         "group relative flex h-full flex-col overflow-hidden transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5",
         isOpen && "ring-1 ring-primary/40",

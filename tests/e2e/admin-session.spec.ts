@@ -6,7 +6,7 @@ test("admin creates, configures and publishes a session", async ({ page }) => {
   await page.fill("#email", "admin@arenapass.local")
   await page.fill("#password", "ChangeMe123!")
   await page.getByRole("button", { name: "Sign in" }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 60_000 }) // sign-in + first admin compile is slow in dev under parallel workers
   await expect(page.getByText("Today's sales")).toBeVisible()
 
   await page.goto("/admin/sessions/new")
@@ -31,8 +31,10 @@ test("admin creates, configures and publishes a session", async ({ page }) => {
   await expect(page.getByText("0/18")).toBeVisible()
 
   await page.goto("/sessions")
-  await expect(page.getByText(title)).toBeVisible()
-  await expect(page.getByText("6 teams × 3 players")).toBeVisible()
+  // Scope to this run's card: earlier runs leave other 6 × 3 sessions on the page.
+  const card = page.locator('[data-slot="card"]', { has: page.getByRole("heading", { name: title }) })
+  await expect(card).toBeVisible()
+  await expect(card.getByText("6 teams × 3 players")).toBeVisible()
 })
 
 test("staff role cannot open finance pages", async ({ page }) => {
@@ -40,7 +42,7 @@ test("staff role cannot open finance pages", async ({ page }) => {
   await page.fill("#email", "sam.staff@arenapass.local")
   await page.fill("#password", "ChangeMe123!")
   await page.getByRole("button", { name: "Sign in" }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 60_000 }) // sign-in + first admin compile is slow in dev under parallel workers
   await expect(page.getByRole("link", { name: "Payments" })).toHaveCount(0)
   const res = await page.request.get("/api/admin/payments")
   expect(res.status()).toBe(403)

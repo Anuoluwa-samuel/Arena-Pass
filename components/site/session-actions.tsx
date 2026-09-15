@@ -81,7 +81,7 @@ function WaitlistForm({ sessionId }: { sessionId: string }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <p className="text-center text-sm text-muted-foreground">This session is sold out. Join the waitlist and we&apos;ll let you know if a slot frees up.</p>
+      <p className="text-center text-sm text-muted-foreground">Every slot is taken right now. Join the waitlist and we&apos;ll email you if one frees up.</p>
       <div className="space-y-1.5">
         <Label htmlFor="wl-name">Name</Label>
         <Input id="wl-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />

@@ -11,3 +11,12 @@ export const signupSchema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   password: z.string().min(8).max(200),
 })
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email().max(160),
+})
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: z.string().min(8).max(200),
+})
