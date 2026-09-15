@@ -33,13 +33,22 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
   const isLoggedIn = !!customer
   const userName = customer?.name.split(" ")[0] ?? "Player"
 
-  const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/sessions", label: "Sessions" },
-    { href: "/about", label: "About" },
-    { href: "/faq", label: "FAQ" },
-    { href: "/contact", label: "Contact" },
-  ]
+  // Signed-in customers get a focused nav (book, get help, reach us); My Tickets
+  // and Sign Out live in the account menu. Home and About stay reachable via the
+  // logo and direct links. Shared by the desktop links and the mobile menu.
+  const navLinks = isLoggedIn
+    ? [
+        { href: "/sessions", label: "Sessions" },
+        { href: "/faq", label: "FAQ" },
+        { href: "/contact", label: "Contact" },
+      ]
+    : [
+        { href: "/", label: "Home" },
+        { href: "/sessions", label: "Sessions" },
+        { href: "/about", label: "About" },
+        { href: "/faq", label: "FAQ" },
+        { href: "/contact", label: "Contact" },
+      ]
 
   const signOut = async () => {
     await api.post("/api/auth/customer/logout").catch(() => null)
@@ -201,7 +210,7 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
             animate={{ height: "auto", opacity: 1 }}
             exit={reduce ? undefined : { height: 0, opacity: 0 }}
             transition={{ duration: DURATION.base, ease: EASE_OUT }}
-            className="overflow-hidden border-t border-border bg-background md:hidden"
+            className="overflow-hidden border-t border-border bg-popover md:hidden"
           >
             <div className="space-y-1 px-4 py-4">
               {navLinks.map((link) => (
