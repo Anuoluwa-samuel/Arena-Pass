@@ -30,6 +30,10 @@ const schema = z.object({
   UPLOAD_DIR: z.string().default("./storage/uploads"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
 
+  // Google sign-in (optional). "Continue with Google" appears only when both are set.
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // Email
   EMAIL_PROVIDER: z.enum(["console", "resend"]).default("console"),
   RESEND_API_KEY: z.string().optional(),
@@ -62,6 +66,7 @@ export const env = {
   ...raw,
   isProd,
   isTest: raw.NODE_ENV === "test",
+  googleEnabled: Boolean(raw.GOOGLE_CLIENT_ID && raw.GOOGLE_CLIENT_SECRET),
   SESSION_SECRET: requireInProd(
     "SESSION_SECRET",
     raw.SESSION_SECRET,

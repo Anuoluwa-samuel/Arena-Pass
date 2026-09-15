@@ -14,7 +14,9 @@ export interface EmailChannel {
 
 class ConsoleEmailChannel implements EmailChannel {
   async send(msg: EmailMessage) {
-    logger.info("email.console", { to: msg.to, subject: msg.subject })
+    // Dev convenience: the body carries links (tickets, password resets) that are otherwise unreachable
+    // without a real inbox. Never logged in production, where those links are credentials.
+    logger.info("email.console", { to: msg.to, subject: msg.subject, ...(env.isProd ? {} : { text: msg.text }) })
     return {}
   }
 }

@@ -8,6 +8,13 @@
       "when": 1789118850448,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789482782440,
+      "tag": "0001_salty_beast",
+      "breakpoints": true
     }
   ]
 }
