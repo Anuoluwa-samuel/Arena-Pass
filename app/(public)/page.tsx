@@ -39,12 +39,12 @@ export default async function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
           <div className="animate-float-a absolute right-0 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary/10 blur-3xl" />
           <div className="animate-float-b absolute bottom-0 left-0 -z-10 h-[300px] w-[300px] rounded-full bg-primary/5 blur-3xl" />
-          <div className="pitch-lines absolute inset-0 opacity-[0.07]" aria-hidden="true" />
+          <div className="pitch-lines absolute inset-0 [opacity:var(--pitch-opacity)]" aria-hidden="true" />
         </div>
         <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
           <StaggerGroup trigger="mount" stagger={0.12} delayChildren={0.05} className="mx-auto max-w-2xl text-center">
             {homepage.hero.badge && (
-              <StaggerItem className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+              <StaggerItem className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-primary">
                 <span className="relative flex size-2">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex size-2 rounded-full bg-primary" />

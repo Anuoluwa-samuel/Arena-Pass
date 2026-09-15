@@ -3,43 +3,76 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* PlayPass - Dark + Green Sports Theme */
+/* Arena Pass runs two themes from one token set.
+   Light: whitish gradient surfaces, deep pitch green.
+   Dark:  floodlit pitch — near-black surfaces, one vivid green.
+   Light is the fallback when no class is set; `.dark` is applied by next-themes. */
 :root {
-  --background: oklch(0.12 0.01 260);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.16 0.01 260);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.16 0.01 260);
-  --popover-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.72 0.19 145);
-  --primary-foreground: oklch(0.12 0.01 260);
-  --secondary: oklch(0.22 0.01 260);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.72 0.19 145);
-  --accent-foreground: oklch(0.12 0.01 260);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.28 0.01 260);
-  --input: oklch(0.22 0.01 260);
-  --ring: oklch(0.72 0.19 145);
-  --chart-1: oklch(0.72 0.19 145);
-  --chart-2: oklch(0.6 0.15 145);
-  --chart-3: oklch(0.5 0.12 145);
-  --chart-4: oklch(0.8 0.15 145);
-  --chart-5: oklch(0.45 0.1 145);
+  --background: oklch(0.985 0.005 155);
+  --foreground: oklch(0.22 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 260);
+  /* Deeper than the dark-theme green: L 0.72 cannot carry white text or pass
+     4.5:1 as text on white, so light drops to L 0.54 and keeps the same hue. */
+  --primary: oklch(0.54 0.15 150);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.008 155);
+  --secondary-foreground: oklch(0.26 0.02 260);
+  --muted: oklch(0.96 0.008 155);
+  --muted-foreground: oklch(0.47 0.02 260);
+  --accent: oklch(0.54 0.15 150);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.52 0.21 27);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.008 250);
+  --input: oklch(0.93 0.006 250);
+  --ring: oklch(0.54 0.15 150);
+  --chart-1: oklch(0.54 0.15 150);
+  --chart-2: oklch(0.63 0.14 150);
+  --chart-3: oklch(0.71 0.12 150);
+  --chart-4: oklch(0.46 0.13 150);
+  --chart-5: oklch(0.79 0.09 150);
   --radius: 0.75rem;
-  --sidebar: oklch(0.14 0.01 260);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.72 0.19 145);
-  --sidebar-primary-foreground: oklch(0.12 0.01 260);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.28 0.01 260);
-  --sidebar-ring: oklch(0.72 0.19 145);
-  --success: oklch(0.72 0.19 145);
-  --warning: oklch(0.8 0.15 85);
+  --sidebar: oklch(0.975 0.008 155);
+  --sidebar-foreground: oklch(0.22 0.02 260);
+  --sidebar-primary: oklch(0.54 0.15 150);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.01 155);
+  --sidebar-accent-foreground: oklch(0.24 0.02 260);
+  --sidebar-border: oklch(0.9 0.008 250);
+  --sidebar-ring: oklch(0.54 0.15 150);
+  --success: oklch(0.54 0.15 150);
+  --warning: oklch(0.62 0.14 70);
+
+  /* Ambient page background. One token, two themes — the body rule never changes. */
+  --gradient-page:
+    radial-gradient(ellipse 90% 55% at 50% -20%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 65%),
+    radial-gradient(ellipse 60% 45% at 100% 0%, color-mix(in oklch, var(--primary) 8%, transparent), transparent 60%),
+    linear-gradient(180deg, oklch(0.995 0.003 155) 0%, oklch(0.975 0.008 158) 45%, oklch(0.955 0.012 160) 100%);
+
+  /* Hero pitch markings: colour and strength are themed, the geometry is not. */
+  --pitch-line: color-mix(in oklch, var(--primary) 85%, transparent);
+  --pitch-opacity: 0.16;
+
+  /* Recharts takes plain colour strings, so chart marks need their own tokens
+     rather than Tailwind classes. Contrast-tuned per theme. */
+  --chart-mark: oklch(0.54 0.15 150);
+  --chart-grid: oklch(0.91 0.008 250);
+  --chart-axis: oklch(0.47 0.02 260);
+  --chart-cursor: oklch(0.95 0.008 155);
+
+  /* Glass surface (see .glass / .glass-bar below). Light glass needs a visible
+     edge: a white rim disappears on a whitish page, so the border is a real
+     neutral and the top highlight does the "glass" work. */
+  --glass-bg: color-mix(in oklch, var(--card) 62%, transparent);
+  --glass-bar-bg: color-mix(in oklch, var(--background) 72%, transparent);
+  --glass-border: color-mix(in oklch, var(--border) 85%, transparent);
+  --glass-highlight: oklch(1 0 0 / 0.75);
+  --glass-shadow: 0 10px 30px -12px oklch(0.35 0.04 160 / 0.18);
+  --glass-blur: 16px;
+  --glass-fallback: var(--card);
 }
 
 .dark {
@@ -77,6 +110,26 @@
   --sidebar-ring: oklch(0.72 0.19 145);
   --success: oklch(0.72 0.19 145);
   --warning: oklch(0.8 0.15 85);
+
+  --gradient-page:
+    radial-gradient(ellipse 90% 55% at 50% -20%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 60%),
+    linear-gradient(180deg, oklch(0.145 0.012 260) 0%, oklch(0.12 0.01 260) 55%, oklch(0.11 0.012 265) 100%);
+
+  --pitch-line: color-mix(in oklch, var(--primary) 60%, transparent);
+  --pitch-opacity: 0.07;
+
+  --chart-mark: #16a34a;
+  --chart-grid: oklch(0.24 0.01 260);
+  --chart-axis: oklch(0.6 0 0);
+  --chart-cursor: oklch(0.2 0.01 260);
+
+  --glass-bg: color-mix(in oklch, var(--card) 55%, transparent);
+  --glass-bar-bg: color-mix(in oklch, var(--background) 65%, transparent);
+  --glass-border: oklch(1 0 0 / 0.08);
+  --glass-highlight: oklch(1 0 0 / 0.06);
+  --glass-shadow: 0 10px 30px -12px oklch(0 0 0 / 0.55);
+  --glass-blur: 16px;
+  --glass-fallback: var(--card);
 }
 
 @theme inline {
@@ -128,7 +181,43 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* The ambient gradient is painted once, fixed to the viewport, so long
+       pages don't stretch it and nothing under it has to repeat the effect. */
+    background-image: var(--gradient-page);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
+}
+
+/* Glass — the one translucent surface. Tokens above carry the per-theme values.
+   Rules (docs/DESIGN.md): never nest glass in glass; dense data surfaces
+   (tables, forms, dialogs) stay opaque.
+   Shadows go through Tailwind's own --tw-* shadow variables so `ring-*`
+   utilities on the same element compose with the glass edge instead of
+   replacing it. */
+@utility glass {
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  --tw-inset-shadow: inset 0 1px 0 0 var(--glass-highlight);
+  --tw-shadow: var(--glass-shadow);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* Edge-to-edge bars (sticky headers, footer): frost only — the element keeps
+   its own hairline border and no lift shadow. */
+@utility glass-bar {
+  background-color: var(--glass-bar-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* No backdrop-filter support: fall back to a solid surface so text never sits
+   on an unblurred, busy background. Unlayered, so it beats the utilities. */
+@supports not ((backdrop-filter: blur(0)) or (-webkit-backdrop-filter: blur(0))) {
+  .glass { background-color: var(--glass-fallback); }
+  .glass-bar { background-color: var(--background); }
 }
 
 /* Gentle breathing glow — used sparingly to signal "act now" (e.g. the Buy
@@ -191,8 +280,8 @@
 /* Faint pitch markings behind the hero — brand texture, never competes with content. */
 .pitch-lines {
   background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--primary) 60%, transparent) 1px, transparent 1px),
-    radial-gradient(circle at center, transparent 118px, color-mix(in oklch, var(--primary) 60%, transparent) 119px, transparent 121px);
+    linear-gradient(to right, var(--pitch-line) 1px, transparent 1px),
+    radial-gradient(circle at center, transparent 118px, var(--pitch-line) 119px, transparent 121px);
   background-size: 100% 100%, 100% 100%;
   background-position: center, center;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
@@ -200,7 +289,7 @@
 
 /* Ticket print styles: only the ticket, on white. */
 @media print {
-  body { background: white !important; color: black !important; }
+  body { background: white !important; background-image: none !important; color: black !important; }
   .print-hidden { display: none !important; }
-  .print-ticket { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; color: black !important; }
+  .print-ticket { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; color: black !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }

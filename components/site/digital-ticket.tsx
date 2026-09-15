@@ -12,7 +12,7 @@ export function DigitalTicket({ ticket, qrImage }: { ticket: PublicTicket; qrIma
   const inactive = ticket.status !== "CONFIRMED"
   return (
     <div>
-      <Card className="print-ticket overflow-hidden">
+      <Card variant="glass" className="print-ticket overflow-hidden">
         <div className="bg-primary px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

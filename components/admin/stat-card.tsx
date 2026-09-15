@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 /** KPI tile: value first, label second, optional delta/sub-line. No chart junk. */
 export function StatCard({ label, value, sub, icon: Icon, tone = "default", className }: { label: string; value: string | number; sub?: string; icon?: ComponentType<{ className?: string }>; tone?: "default" | "primary" | "warning" | "destructive"; className?: string }) {
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-5", className)}>
+    <div className={cn("glass rounded-xl p-5", className)}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm text-muted-foreground">{label}</p>
         {Icon && (

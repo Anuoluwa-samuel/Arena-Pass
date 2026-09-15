@@ -2,12 +2,20 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
+function Card({
+  className,
+  variant = 'default',
+  ...props
+}: React.ComponentProps<'div'> & { variant?: 'default' | 'glass' }) {
   return (
     <div
       data-slot="card"
+      data-variant={variant}
       className={cn(
-        'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm',
+        // `glass` owns background, border and shadow, so the default surface
+        // classes are swapped out rather than left to fight it in the cascade.
+        variant === 'glass' ? 'glass' : 'bg-card border shadow-sm',
+        'text-card-foreground flex flex-col gap-6 rounded-xl py-6',
         className,
       )}
       {...props}

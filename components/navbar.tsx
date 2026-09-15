@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 import { DURATION, EASE_OUT } from "@/lib/motion"
 
@@ -70,7 +71,7 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b bg-background/95 backdrop-blur transition-shadow duration-300 supports-[backdrop-filter]:bg-background/60",
+        "glass-bar sticky top-0 z-50 border-b transition-shadow duration-300",
         scrolled ? "border-border shadow-sm" : "border-transparent"
       )}
     >
@@ -94,7 +95,7 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
                 isActive(link.href)
                   ? "text-primary"
                   : "text-muted-foreground"
-              )}
+                )}
             >
               {link.label}
               {isActive(link.href) && (
@@ -107,13 +108,14 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
                     transition={{ duration: DURATION.fast, ease: EASE_OUT }}
                   />
                 )
-              )}
+                )}
             </Link>
           ))}
         </div>
 
         {/* Desktop Auth */}
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-2 md:flex">
+          <ThemeToggle className="mr-1" />
           {isLoggedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -151,40 +153,43 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="-mr-2.5 grid place-items-center rounded-md p-2.5 md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-          aria-expanded={mobileMenuOpen}
-        >
-          <span className="relative block size-6">
-            <AnimatePresence initial={false} mode="wait">
-              {mobileMenuOpen ? (
-                <motion.span
-                  key="close"
-                  className="absolute inset-0 grid place-items-center"
-                  initial={reduce ? false : { opacity: 0, rotate: -90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={reduce ? undefined : { opacity: 0, rotate: 90 }}
-                  transition={{ duration: DURATION.fast, ease: EASE_OUT }}
-                >
-                  <X className="size-6" />
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="menu"
-                  className="absolute inset-0 grid place-items-center"
-                  initial={reduce ? false : { opacity: 0, rotate: 90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={reduce ? undefined : { opacity: 0, rotate: -90 }}
-                  transition={{ duration: DURATION.fast, ease: EASE_OUT }}
-                >
-                  <Menu className="size-6" />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </span>
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <button
+            className="-mr-2.5 grid place-items-center rounded-md p-2.5"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span className="relative block size-6">
+              <AnimatePresence initial={false} mode="wait">
+                {mobileMenuOpen ? (
+                  <motion.span
+                    key="close"
+                    className="absolute inset-0 grid place-items-center"
+                    initial={reduce ? false : { opacity: 0, rotate: -90 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    exit={reduce ? undefined : { opacity: 0, rotate: 90 }}
+                    transition={{ duration: DURATION.fast, ease: EASE_OUT }}
+                  >
+                    <X className="size-6" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="menu"
+                    className="absolute inset-0 grid place-items-center"
+                    initial={reduce ? false : { opacity: 0, rotate: 90 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    exit={reduce ? undefined : { opacity: 0, rotate: -90 }}
+                    transition={{ duration: DURATION.fast, ease: EASE_OUT }}
+                  >
+                    <Menu className="size-6" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </span>
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu */}
@@ -241,7 +246,7 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
                     <Link href="/signup">Sign Up</Link>
                   </Button>
                 </div>
-              )}
+                )}
             </div>
           </motion.div>
         )}
