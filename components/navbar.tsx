@@ -250,7 +250,7 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
                     <Link
                       href={link.href}
                       className={cn(
-                        "label-mono flex items-center justify-between rounded-lg px-3 py-3 transition-colors",
+                        "label-mono flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors",
                         isActive(link.href) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
                       )}
                       onClick={() => setMobileMenuOpen(false)}
@@ -259,32 +259,32 @@ export function Navbar({ customer = null, siteName = "Arena Pass" }: NavbarProps
                     </Link>
                   </motion.div>
                 ))}
-                <div className="my-3 border-t border-border" />
+                <div className="my-2 border-t border-border" />
                 {isLoggedIn ? (
                   <>
                     <Link
                       href="/account/tickets"
-                      className="label-mono block rounded-lg px-3 py-3 text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
+                      className="label-mono block rounded-lg px-3 py-2.5 text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       My Tickets
                     </Link>
                     <button
                       type="button"
-                      className="label-mono block w-full rounded-lg px-3 py-3 text-left text-destructive hover:bg-foreground/[0.05]"
+                      className="label-mono block w-full rounded-lg px-3 py-2.5 text-left text-destructive hover:bg-foreground/[0.05]"
                       onClick={signOut}
                     >
                       Sign Out
                     </button>
                   </>
                 ) : (
-                  <div className="flex flex-col gap-2 px-1 pt-1">
-                    <Button variant="outline" asChild className="w-full">
+                  <div className="grid grid-cols-2 gap-2 px-1 pt-1">
+                    <Button variant="outline" asChild className="h-10 w-full font-mono text-xs uppercase tracking-[0.14em]">
                       <Link href="/login">Sign In</Link>
                     </Button>
-                    <ArrowButton asChild variant="primary" className="w-full">
+                    <Button asChild className="h-10 w-full font-mono text-xs uppercase tracking-[0.14em]">
                       <Link href="/signup">Sign Up</Link>
-                    </ArrowButton>
+                    </Button>
                   </div>
                 )}
               </motion.div>

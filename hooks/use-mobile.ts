@@ -12,11 +12,31 @@ export function useMediaQuery(query: string): boolean {
     (onChange) => {
       const mql = window.matchMedia(query)
       mql.addEventListener("change", onChange)
-      return () => mql.removeEventListener("change", onChange)
+      window.addEventListener("resize", onChange)
+      return () => {
+        mql.removeEventListener("change", onChange)
+        window.removeEventListener("resize", onChange)
+      }
     },
-    () => window.matchMedia(query).matches,
+    () => matches(query),
     () => false
   )
+}
+
+const WIDTH_QUERY = /^\(\s*(min|max)-width:\s*(\d+(?:\.\d+)?)px\s*\)$/
+
+/**
+ * matchMedia, except when a phone is in "desktop site" mode (app/layout.tsx sets
+ * [data-phone-zoom]): width queries then use the screen's real width, matching
+ * the CSS breakpoints.
+ */
+function matches(query: string) {
+  const width = query.match(WIDTH_QUERY)
+  if (width && document.documentElement.hasAttribute("data-phone-zoom")) {
+    const limit = Number(width[2])
+    return width[1] === "max" ? window.screen.width <= limit : window.screen.width >= limit
+  }
+  return window.matchMedia(query).matches
 }
 
 export function useIsMobile() {

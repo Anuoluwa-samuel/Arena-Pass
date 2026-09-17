@@ -34,6 +34,15 @@ export const metadata: Metadata = {
   },
 }
 
+/**
+ * "Desktop site" on a phone makes the browser ignore the viewport meta tag and
+ * lay the page out ~980px wide, so everything renders tiny. Before first paint,
+ * detect a touch screen narrower than a tablet showing a wider layout, zoom
+ * <html> back to the screen's real width and flag it; globals.css then points
+ * every breakpoint at the phone layout. Real desktops and tablets never match.
+ */
+const phoneZoomScript = `(function(){var d=document.documentElement;function f(){var s=screen.width,w=window.innerWidth;var on=s>0&&s<640&&w>s*1.2&&matchMedia("(pointer: coarse)").matches;if(on){d.style.zoom=String(w/s);d.style.setProperty("--phone-zoom",String(w/s));d.setAttribute("data-phone-zoom","")}else if(d.hasAttribute("data-phone-zoom")){d.style.zoom="";d.style.removeProperty("--phone-zoom");d.removeAttribute("data-phone-zoom")}}f();addEventListener("resize",f)})()`
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +52,9 @@ export default function RootLayout({
     // suppressHydrationWarning: next-themes writes the theme class onto <html>
     // from an inline script before hydration, so the server markup won't match.
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: phoneZoomScript }} />
+      </head>
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"

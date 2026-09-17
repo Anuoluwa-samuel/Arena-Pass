@@ -3,6 +3,78 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* "Desktop site" on a phone: the browser ignores the viewport meta tag and lays
+   the page out 980px wide. app/layout.tsx detects that, zooms <html> back to the
+   phone's real width and sets [data-phone-zoom]. These overrides make every
+   breakpoint follow the phone's width in that mode. Redefining a built-in
+   variant keeps its sort position, and :where() adds no specificity, so real
+   desktops (no attribute) get exactly the CSS they had before. */
+@custom-variant sm {
+  @media (width >= 40rem) { &:where(:root:not([data-phone-zoom]) *) { @slot; } }
+}
+@custom-variant md {
+  @media (width >= 48rem) { &:where(:root:not([data-phone-zoom]) *) { @slot; } }
+}
+@custom-variant lg {
+  @media (width >= 64rem) { &:where(:root:not([data-phone-zoom]) *) { @slot; } }
+}
+@custom-variant xl {
+  @media (width >= 80rem) { &:where(:root:not([data-phone-zoom]) *) { @slot; } }
+}
+@custom-variant 2xl {
+  @media (width >= 96rem) { &:where(:root:not([data-phone-zoom]) *) { @slot; } }
+}
+@custom-variant max-sm {
+  @media (width < 40rem) { @slot; }
+  &:where([data-phone-zoom] *) { @slot; }
+}
+@custom-variant max-md {
+  @media (width < 48rem) { @slot; }
+  &:where([data-phone-zoom] *) { @slot; }
+}
+@custom-variant max-lg {
+  @media (width < 64rem) { @slot; }
+  &:where([data-phone-zoom] *) { @slot; }
+}
+
+/* In phone zoom mode viewport units still measure the 980px layout, so each
+   use of vw/vh/svh is divided by the zoom (--phone-zoom, set by the same script)
+   to mean the phone's real screen again. Unlayered, so they beat the utilities. */
+:root[data-phone-zoom] {
+  & [class~="min-h-screen"] { min-height: calc(100vh / var(--phone-zoom)); }
+  & [class~="min-h-svh"] { min-height: calc(100svh / var(--phone-zoom)); }
+  & [class~="h-svh"] { height: calc(100svh / var(--phone-zoom)); }
+  & [class~="max-h-screen"] { max-height: calc(100vh / var(--phone-zoom)); }
+  & [class~="min-h-[70vh]"] { min-height: calc(70vh / var(--phone-zoom)); }
+  & [class~="max-h-[60vh]"] { max-height: calc(60vh / var(--phone-zoom)); }
+  & [class~="min-h-[calc(100svh-5.5rem)]"] { min-height: calc(100svh / var(--phone-zoom) - 5.5rem); }
+  & [class~="h-[calc(100svh-1.5rem)]"] { height: calc(100svh / var(--phone-zoom) - 1.5rem); }
+  & [class~="text-[clamp(3.25rem,9vw,7.5rem)]"] { font-size: clamp(3.25rem, 9vw / var(--phone-zoom), 7.5rem); }
+  & [class~="text-[clamp(5rem,22vw,20rem)]"] { font-size: clamp(5rem, 22vw / var(--phone-zoom), 20rem); }
+  & [class~="h-[22vh]"] { height: calc(22vh / var(--phone-zoom)); }
+  & [class~="h-[2.2vh]"] { height: calc(2.2vh / var(--phone-zoom)); }
+  & [class~="h-[16vh]"] { height: calc(16vh / var(--phone-zoom)); }
+  & [class~="h-[50vh]"] { height: calc(50vh / var(--phone-zoom)); }
+  & [class~="bottom-[-20vh]"] { bottom: calc(-20vh / var(--phone-zoom)); }
+  & [class~="w-[150vw]"] { width: calc(150vw / var(--phone-zoom)); }
+  & [class~="w-[140vw]"] { width: calc(140vw / var(--phone-zoom)); }
+  & [class~="w-[110vw]"] { width: calc(110vw / var(--phone-zoom)); }
+  & [class~="w-[60vw]"] { width: calc(60vw / var(--phone-zoom)); }
+
+  /* Floating UI measures on-screen pixels, so a popup placed inside the zoomed
+     page would be scaled twice. Undo the zoom on Radix's positioning wrapper and
+     reapply it to the popup, then scale the measured sizes it hands down. */
+  & [data-radix-popper-content-wrapper] { zoom: calc(1 / var(--phone-zoom)); }
+  & [data-radix-popper-content-wrapper] > * { zoom: var(--phone-zoom); }
+  & [data-slot="dropdown-menu-content"], & [data-slot="dropdown-menu-sub-content"] { max-height: calc(var(--radix-dropdown-menu-content-available-height) / var(--phone-zoom)); }
+  & [data-slot="context-menu-content"], & [data-slot="context-menu-sub-content"] { max-height: calc(var(--radix-context-menu-content-available-height) / var(--phone-zoom)); }
+  & [data-slot="select-content"] { max-height: calc(var(--radix-select-content-available-height) / var(--phone-zoom)); }
+  & [data-slot="select-content"] [data-radix-select-viewport] {
+    height: calc(var(--radix-select-trigger-height) / var(--phone-zoom));
+    min-width: calc(var(--radix-select-trigger-width) / var(--phone-zoom));
+  }
+}
+
 /* Arena Pass runs two themes from one token set.
    Light: whitish gradient surfaces, deep pitch green.
    Dark:  floodlit pitch — near-black surfaces, one vivid green.
