@@ -11,6 +11,7 @@ import { requirePermission } from "@/server/auth/rbac"
 import { getCustomerDetail } from "@/server/services/customers"
 import { AppError } from "@/server/http/errors"
 import { formatDateTime, formatMoney } from "@/lib/format"
+import { GENDER_LABELS, POSITION_LABELS, SKILL_LABELS, type Gender, type Position, type SkillLevel } from "@/lib/domain/profile"
 
 export const metadata = { title: "Customer" }
 
@@ -37,7 +38,31 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         <StatCard label="Attended" value={tickets.filter((t) => t.ticket.status === "USED").length} sub="scanned in at the arena" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">
-        <CustomerEditor customer={{ id: customer.id, name: customer.name, phone: customer.phone ?? "", isActive: customer.isActive }} canManage={user.permissions.includes("customers.manage")} />
+        <div className="space-y-6">
+          <CustomerEditor customer={{ id: customer.id, name: customer.name, phone: customer.phone ?? "", isActive: customer.isActive }} canManage={user.permissions.includes("customers.manage")} />
+          <Card>
+            <CardHeader><CardTitle className="text-base">Player profile</CardTitle></CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                {[
+                  ["Username", customer.username ? `@${customer.username}` : null],
+                  ["Date of birth", customer.dateOfBirth],
+                  ["Gender", customer.gender ? GENDER_LABELS[customer.gender as Gender] : null],
+                  ["Area / city", customer.city],
+                  ["Position", customer.preferredPosition ? POSITION_LABELS[customer.preferredPosition as Position] : null],
+                  ["Skill level", customer.skillLevel ? SKILL_LABELS[customer.skillLevel as SkillLevel] : null],
+                  ["Emergency contact", customer.emergencyContactName],
+                  ["Emergency phone", customer.emergencyContactPhone],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className={value ? "truncate" : "text-muted-foreground"}>{value ?? "—"}</dd>
+                  </div>
+                ))}
+              </dl>
+            </CardContent>
+          </Card>
+        </div>
         <Card>
           <CardHeader><CardTitle className="text-base">Ticket history</CardTitle></CardHeader>
           <CardContent>

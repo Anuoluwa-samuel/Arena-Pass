@@ -30,6 +30,7 @@ export interface AuthenticatedCustomer {
   id: string
   email: string
   name: string
+  username: string | null
   phone: string | null
   sessionId: string
 }
@@ -141,7 +142,7 @@ export const getCurrentCustomer = cache(async (): Promise<AuthenticatedCustomer 
     where: and(eq(schema.customers.id, session.principalId), eq(schema.customers.isActive, true), isNull(schema.customers.deletedAt)),
   })
   if (!customer) return null
-  return { id: customer.id, email: customer.email, name: customer.name, phone: customer.phone, sessionId: session.id }
+  return { id: customer.id, email: customer.email, name: customer.name, username: customer.username, phone: customer.phone, sessionId: session.id }
 })
 
 /** Token-based variant for route handlers that receive the cookie header directly (e.g. tests). */

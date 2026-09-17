@@ -12,7 +12,7 @@ import { AuthShell } from "@/components/site/auth-shell"
 import { api, ApiError, errorMessage, fieldErrors } from "@/lib/api-client"
 import { safeNextPath } from "@/lib/safe-next"
 
-const DEFAULT_NEXT = "/account/tickets"
+const DEFAULT_NEXT = "/account"
 
 /** `?error=` codes the Google callback redirects back with. */
 const OAUTH_ERRORS: Record<string, string> = {

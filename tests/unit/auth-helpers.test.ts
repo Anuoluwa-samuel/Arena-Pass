@@ -35,7 +35,7 @@ describe("safeNextPath", () => {
     for (const bad of ["//evil.com", "/\\evil.com", "https://evil.com", "evil.com", "", `/${tab}/evil.com`, `/${newline}/evil.com`, "/a\\b"]) {
       expect(safeNextPath(bad, "/fallback")).toBe("/fallback")
     }
-    expect(safeNextPath(null)).toBe("/account/tickets")
+    expect(safeNextPath(null)).toBe("/account")
   })
 })
 

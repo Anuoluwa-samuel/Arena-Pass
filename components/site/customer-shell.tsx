@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { AnimatePresence, motion, type Transition } from "motion/react"
 import { useReducedMotionSafe } from "@/hooks/use-mobile"
-import { CalendarDays, ChevronsLeft, CircleHelp, LogOut, Mail, Menu, Ticket } from "lucide-react"
+import { CalendarDays, ChevronsLeft, CircleHelp, House, LogOut, Mail, Menu, Ticket, UserRound } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -17,9 +17,24 @@ import { cn } from "@/lib/utils"
 
 type Icon = ComponentType<{ className?: string }>
 
-/** Main links for signed-in customers; My Tickets sits in the account area below. */
-const NAV: Array<{ href: string; label: string; icon: Icon }> = [
+interface NavItem {
+  href: string
+  label: string
+  icon: Icon
+  /** Active only on this exact path (the account home would otherwise light up on every /account/* page). */
+  exact?: boolean
+}
+
+/** Everything a signed-in customer does, together at the top. */
+const NAV: NavItem[] = [
+  { href: "/account", label: "Home", icon: House, exact: true },
   { href: "/sessions", label: "Sessions", icon: CalendarDays },
+  { href: "/account/tickets", label: "My Tickets", icon: Ticket },
+  { href: "/account/profile", label: "Profile", icon: UserRound },
+]
+
+/** Help links, grouped under their own label. */
+const HELP_NAV: NavItem[] = [
   { href: "/faq", label: "FAQ", icon: CircleHelp },
   { href: "/contact", label: "Contact", icon: Mail },
 ]
@@ -30,6 +45,7 @@ const COLLAPSED_WIDTH = 76
 interface Customer {
   name: string
   email: string
+  username: string | null
 }
 
 function useSpring(): Transition {
@@ -163,7 +179,7 @@ interface BodyProps {
 function SidebarBody({ customer, siteName, collapsed, indicatorId, stagger = false, onNavigate, onSignOut, collapseControl }: BodyProps) {
   const pathname = usePathname()
   const reduce = useReducedMotionSafe()
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
+  const isActive = ({ href, exact }: NavItem) => pathname === href || (!exact && pathname.startsWith(`${href}/`))
   const cascade = stagger && !reduce
 
   return (
@@ -175,7 +191,7 @@ function SidebarBody({ customer, siteName, collapsed, indicatorId, stagger = fal
     >
       <CascadeItem cascade={cascade}>
         <div className={cn("flex h-16 items-center gap-2 pl-5 pr-3", collapsed && "h-auto flex-col gap-2 px-0 py-3")}>
-          <Link href="/" onClick={onNavigate} className={cn("flex min-w-0 flex-1 items-center gap-2.5", collapsed && "flex-none")} aria-label={collapsed ? `${siteName} home` : undefined}>
+          <Link href="/account" onClick={onNavigate} className={cn("flex min-w-0 flex-1 items-center gap-2.5", collapsed && "flex-none")} aria-label={collapsed ? "Your home" : undefined}>
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary">
               <span className="text-sm font-black tracking-tight text-primary-foreground">AP</span>
             </span>
@@ -188,26 +204,42 @@ function SidebarBody({ customer, siteName, collapsed, indicatorId, stagger = fal
       <nav aria-label="Main" className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
         {NAV.map((item) => (
           <CascadeItem key={item.href} cascade={cascade}>
-            <SidebarRow {...item} collapsed={collapsed} active={isActive(item.href)} indicatorId={indicatorId} onClick={onNavigate} />
+            <SidebarRow href={item.href} label={item.label} icon={item.icon} collapsed={collapsed} active={isActive(item)} indicatorId={indicatorId} onClick={onNavigate} />
+          </CascadeItem>
+        ))}
+        <CascadeItem cascade={cascade}>
+          {collapsed ? (
+            <div aria-hidden="true" className="mx-auto my-3 h-px w-8 bg-border/70" />
+          ) : (
+            <p className="label-mono px-3 pb-1 pt-5 text-[11px] text-muted-foreground">/Help</p>
+          )}
+        </CascadeItem>
+        {HELP_NAV.map((item) => (
+          <CascadeItem key={item.href} cascade={cascade}>
+            <SidebarRow href={item.href} label={item.label} icon={item.icon} collapsed={collapsed} active={isActive(item)} indicatorId={indicatorId} onClick={onNavigate} />
           </CascadeItem>
         ))}
       </nav>
 
       <div className="space-y-1 border-t border-border/60 px-3 py-3">
         <CascadeItem cascade={cascade}>
-          <SidebarRow href="/account/tickets" label="My Tickets" icon={Ticket} collapsed={collapsed} active={isActive("/account")} indicatorId={indicatorId} onClick={onNavigate} />
-        </CascadeItem>
-        <CascadeItem cascade={cascade}>
           <div className={cn("flex items-center gap-3 rounded-xl px-2 py-2", collapsed && "flex-col gap-2 px-0")}>
-            <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-              {initials(customer.name)}
-            </span>
-            {!collapsed && (
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{customer.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">{customer.email}</span>
+            <Link
+              href="/account/profile"
+              onClick={onNavigate}
+              aria-label={collapsed ? "Your profile" : undefined}
+              className={cn("group flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", collapsed && "flex-none")}
+            >
+              <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary ring-primary/40 transition group-hover:ring-2">
+                {initials(customer.name)}
               </span>
-            )}
+              {!collapsed && (
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium group-hover:text-primary">{customer.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{customer.username ? `@${customer.username}` : customer.email}</span>
+                </span>
+              )}
+            </Link>
             <ThemeToggle />
           </div>
         </CascadeItem>
@@ -303,7 +335,7 @@ export function CustomerShell({
           >
             <Menu className="size-5" />
           </button>
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/account" className="flex items-center gap-2">
             <span className="flex size-8 items-center justify-center rounded-lg bg-primary">
               <span className="text-xs font-black tracking-tight text-primary-foreground">AP</span>
             </span>

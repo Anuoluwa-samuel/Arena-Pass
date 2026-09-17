@@ -4,7 +4,7 @@
  * like `/\host`, and control characters (browsers strip tabs and newlines,
  * which turns `/<tab>/host` into `//host`) all fall back.
  */
-export function safeNextPath(value: string | null | undefined, fallback = "/account/tickets") {
+export function safeNextPath(value: string | null | undefined, fallback = "/account") {
   if (!value || value[0] !== "/" || value[1] === "/" || value[1] === "\\") return fallback
   for (let i = 0; i < value.length; i++) {
     const code = value.charCodeAt(i)

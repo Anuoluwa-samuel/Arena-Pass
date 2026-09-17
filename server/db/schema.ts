@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm"
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -124,6 +125,16 @@ export const customers = pgTable(
     passwordHash: text("password_hash"),
     /** Google's stable account id (`sub`). Linked on first Google sign-in; survives email changes. */
     googleSub: text("google_sub"),
+    // Self-service profile (all optional). Allowed values live in lib/domain/profile.ts.
+    /** Public handle, stored lowercase; unique case-insensitively. */
+    username: text("username"),
+    dateOfBirth: date("date_of_birth", { mode: "string" }),
+    gender: text("gender"),
+    city: text("city"),
+    preferredPosition: text("preferred_position"),
+    skillLevel: text("skill_level"),
+    emergencyContactName: text("emergency_contact_name"),
+    emergencyContactPhone: text("emergency_contact_phone"),
     isActive: boolean("is_active").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
@@ -132,6 +143,7 @@ export const customers = pgTable(
   (t) => [
     uniqueIndex("customers_email_lower_idx").on(sql`lower(${t.email})`),
     uniqueIndex("customers_google_sub_idx").on(t.googleSub),
+    uniqueIndex("customers_username_lower_idx").on(sql`lower(${t.username})`),
   ]
 )
 

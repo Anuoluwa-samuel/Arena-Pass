@@ -39,7 +39,7 @@ export function ResetPasswordForm({ siteName }: { siteName: string }) {
     try {
       await api.post("/api/auth/customer/password/reset", { token, password })
       toast.success("Password updated. You're signed in.")
-      router.push("/account/tickets")
+      router.push("/account")
       router.refresh()
     } catch (err) {
       setLoading(false)

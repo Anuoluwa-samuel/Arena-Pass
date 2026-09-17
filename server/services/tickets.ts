@@ -84,7 +84,7 @@ export async function listTickets(opts: { status?: string; sessionId?: string; c
     .select({
       ticket: schema.tickets,
       customer: { id: schema.customers.id, name: schema.customers.name, email: schema.customers.email },
-      session: { id: schema.sessions.id, title: schema.sessions.title, startsAt: schema.sessions.startsAt, venue: schema.sessions.venue },
+      session: { id: schema.sessions.id, title: schema.sessions.title, startsAt: schema.sessions.startsAt, endsAt: schema.sessions.endsAt, venue: schema.sessions.venue },
       slot: { teamNumber: schema.sessionSlots.teamNumber, slotNumber: schema.sessionSlots.slotNumber },
     })
     .from(schema.tickets)

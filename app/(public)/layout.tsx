@@ -18,7 +18,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <>
         <FloodlightBackdrop />
         <ScrollProgress />
-        <CustomerShell customer={{ name: customer.name, email: customer.email }} siteName={content.siteName} initialCollapsed={collapsed}>
+        <CustomerShell customer={{ name: customer.name, email: customer.email, username: customer.username }} siteName={content.siteName} initialCollapsed={collapsed}>
           {children}
         </CustomerShell>
       </>

@@ -14,13 +14,21 @@ import { CmsIcon } from "@/components/site/cms-icon"
 import { FaqList } from "@/components/site/faq-list"
 import { HeroSteps } from "@/components/site/hero-steps"
 import { formatMoney, formatShortDate, formatTimeRange } from "@/lib/format"
+import { getCurrentCustomer } from "@/server/auth/session"
 import { getFeaturedSessions, getPublicSessions, getPublicSiteContent } from "@/server/services/public-content"
 
 export const dynamic = "force-dynamic"
 
 export default async function LandingPage() {
-  const content = await getPublicSiteContent()
+  const [content, customer] = await Promise.all([getPublicSiteContent(), getCurrentCustomer()])
   const { homepage, services, faqs, announcements, banners } = content
+  // CMS buttons are written for visitors. A signed-in customer never needs "Create account" or "Sign in":
+  // those buttons point to their dashboard instead.
+  const forCustomer = (cta: { label: string; href: string }) =>
+    customer && /^\/(signup|login)(\b|\?|$)/.test(cta.href) ? { label: "My dashboard", href: "/account" } : cta
+  const primaryCta = forCustomer(homepage.hero.primaryCta)
+  const secondaryCta = forCustomer(homepage.hero.secondaryCta)
+  const closingCta = forCustomer({ label: homepage.cta.buttonLabel, href: homepage.cta.buttonHref })
   const [featured, sessions] = await Promise.all([
     homepage.featuredSessionsCount > 0 ? getFeaturedSessions(homepage.featuredSessionsCount) : Promise.resolve([]),
     getPublicSessions(),
@@ -109,11 +117,11 @@ export default async function LandingPage() {
             <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Magnetic>
                 <ArrowButton asChild variant="primary" className="w-full sm:w-auto">
-                  <Link href={homepage.hero.primaryCta.href}>{homepage.hero.primaryCta.label}</Link>
+                  <Link href={primaryCta.href}>{primaryCta.label}</Link>
                 </ArrowButton>
               </Magnetic>
               <ArrowButton asChild className="w-full sm:w-auto">
-                <Link href={homepage.hero.secondaryCta.href}>{homepage.hero.secondaryCta.label}</Link>
+                <Link href={secondaryCta.href}>{secondaryCta.label}</Link>
               </ArrowButton>
             </Reveal>
 
@@ -353,7 +361,7 @@ export default async function LandingPage() {
             <div className="mt-10 flex justify-center">
               <Magnetic>
                 <ArrowButton asChild variant="primary">
-                  <Link href={homepage.cta.buttonHref}>{homepage.cta.buttonLabel}</Link>
+                  <Link href={closingCta.href}>{closingCta.label}</Link>
                 </ArrowButton>
               </Magnetic>
             </div>
