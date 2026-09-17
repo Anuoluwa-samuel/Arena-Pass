@@ -38,7 +38,7 @@ The whole interface is glass over the aurora page gradient. Two settings drive i
 
 ## Typography
 
-Geist (sans) and Geist Mono (ticket numbers, references, countdowns). Scale: page titles `text-3xl/4xl font-bold tracking-tight`, section titles `text-xl/2xl`, body `text-base`, meta `text-sm text-muted-foreground`, eyebrows `text-xs uppercase tracking-[0.18em] text-primary`.
+Inter Tight carries headlines and body; DM Mono is the label voice and ticket numbers (both via `next/font` in `app/layout.tsx`, exposed as `--font-sans` / `--font-mono`). Headlines are large and light: `font-medium`, tight tracking (`tracking-[-0.035em]` to `-0.045em`), hero at `clamp(2.75rem, 7.5vw, 6rem)`. Section markers use `SectionLabel` ("02 /SESSIONS": green index, muted uppercase mono via the `label-mono` utility). Meta `text-sm text-muted-foreground`.
 
 ## Spacing and layout
 
@@ -60,6 +60,23 @@ Every list has an empty state; every async action has a spinner in its button an
 ## Motion
 
 Tokens in `lib/motion.ts` (`EASE_OUT`, `DURATION.fast/base/slow`, `STAGGER`). Reveal/stagger primitives in `components/motion.tsx`. Page transitions via `app/template.tsx`. The only looping animations are the live-dot ping, the hero glow, the "act now" CTA pulse, and the WebGL smoke (`SmokeyBackground`) behind the customer auth pages. Signed-in customers get a side navigation instead of the top navbar, and no site footer: the sidebar slides in on first load, springs between 256px and 76px via the chevron beside the logo, which flips direction (state kept in the `ap_sidebar` cookie so the server renders the right width; Ctrl/⌘+B also toggles), labels fade with the width, the active item's pill slides between links via a shared `layoutId`, and the mobile drawer cascades its rows in. All of it drops to instant under reduced motion. The smoke takes its colours from `--primary` / `--background`, is decorative (`aria-hidden`, no pointer events), and renders a single still frame under reduced motion. `prefers-reduced-motion` collapses all CSS animation and every Motion primitive falls back to static.
+
+## Come-alive layer
+
+Inspired by cinematic dark product sites, translated to a floodlit pitch. Every piece is decorative on top of working pages; none carries content.
+
+- **Floodlight backdrop** (`components/site/floodlight-backdrop.tsx`): two drifting blurred beams, a breathing glow and a dot grid, fixed behind the public site and customer shell. CSS transform/opacity only. Beam colours are tokens (`--streak-core/-edge/-glow`, `--streak-opacity`); **beam brightness is the contrast budget** because glass is ~10% tint. Dark core stays at L 0.5 × 0.65 opacity; re-run a contrast check before brightening.
+- **Scroll progress**: a 2px green line at the top of the viewport.
+- **`ArrowButton`** (`components/ui/arrow-button.tsx`): uppercase mono label plus a notched arrow tile; the arrow slides out and back in on hover and a sheen crosses the pill. `primary` for the main action, `glass` for secondary. Page-level actions use it; forms keep `Button`.
+- **`Button`** gained a sheen and glow on `default` and glass on `outline`; its API is unchanged.
+- **Motion primitives** (`components/motion.tsx`): `BlurText` (headlines resolve word by word out of a blur; the text stays real text), `CountUp` (server renders the real number, counts up on view), `Parallax`, plus `Reveal`/`StaggerGroup`. `Spotlight` (`components/spotlight.tsx`) adds a pointer-following glow to cards; `Marquee` is the homepage ticker; `FaqList` renders FAQs as expanding glass cards.
+- **Page transition** (`app/template.tsx`): a short lift out of a 6px blur. The filter is removed when it ends; a lingering `filter` would stop every glass surface inside from blurring.
+- **Navbar**: floating glass bar, mono links with a spring-sliding active pill; tucks away on scroll down, returns on scroll up.
+- **Footer**: giant parallax wordmark.
+
+**Reduced motion:** branch markup only with `useReducedMotionSafe()` (`hooks/use-mobile.ts`), never motion's `useReducedMotion`, which reads the preference during hydration and makes React discard the server HTML. CSS animations stop via the global rule, and beams rest at their first keyframe (angle and strength preserved).
+
+**Status text:** chips over near-clear glass use `--success-text`, `--danger-text`, `--warning-text`, `--info-text`, deeper than the fills in light mode.
 
 ## Charts
 

@@ -32,7 +32,7 @@ export const DEFAULT_HOMEPAGE: HomepageContent = {
 export const DEFAULT_ABOUT: AboutContent = {
   title: "About Arena Pass",
   description:
-    "Arena Pass is the easiest way to book a place in organised five-a-side football sessions. We manage the pitch, the teams and the kick-off so all you have to do is show up and play.",
+    "Arena Pass is the easiest way to book a place in organised 4-a-side football sessions. We manage the pitch, the teams and the kick-off so all you have to do is show up and play.",
   mission: "Make organised football accessible to everyone, every week.",
   vision: "A pitch full of players in every city, every evening.",
   imageUrl: null,

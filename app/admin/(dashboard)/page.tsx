@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Banknote, CalendarDays, CheckCircle2, Clock, Ticket, Users, XCircle, RotateCcw, ArrowRight } from "lucide-react"
+import { Banknote, CalendarDays, CheckCircle2, Clock, Ticket, Users, XCircle, RotateCcw, ArrowRight, TriangleAlert } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/page-header"
@@ -10,6 +10,7 @@ import { requirePermission } from "@/server/auth/rbac"
 import { resolveArenaId } from "@/server/http/admin"
 import { getDashboardOverview, getRecentActivity } from "@/server/services/analytics"
 import { getSettings } from "@/server/services/settings"
+import { countPaymentsNeedingRefund } from "@/server/services/payments"
 import { formatMoney, formatRelative, formatShortDate } from "@/lib/format"
 
 export const metadata = { title: "Dashboard" }
@@ -20,7 +21,8 @@ const PAYMENT_TONE = { PAID: "text-primary", PENDING: "text-warning", FAILED: "t
 export default async function AdminDashboard() {
   const user = await requirePermission("dashboard.view")
   const arenaId = await resolveArenaId(user)
-  const [overview, activity, settings] = await Promise.all([getDashboardOverview(arenaId, { days: 30 }), getRecentActivity(arenaId), getSettings(arenaId)])
+  const [overview, activity, settings, needsRefund] = await Promise.all([getDashboardOverview(arenaId, { days: 30 }), getRecentActivity(arenaId), getSettings(arenaId), countPaymentsNeedingRefund(arenaId)])
+  const canRefund = user.permissions.includes("tickets.refund")
   const { kpis } = overview
   const currency = settings.currency
   const totalPayments = overview.payments.reduce((n, p) => n + p.count, 0)
@@ -28,6 +30,13 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-8">
       <PageHeader title={`Good ${greeting()}, ${user.name.split(" ")[0]}`} description="Here's how the arena is doing over the last 30 days." actions={<Button asChild><Link href="/admin/sessions/new">Create session</Link></Button>} />
+
+      {canRefund && needsRefund > 0 && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-start gap-2 text-sm"><TriangleAlert className="mt-0.5 size-4 shrink-0 text-[var(--warning-text)]" /><span><strong>{needsRefund} customer payment{needsRefund === 1 ? "" : "s"} need{needsRefund === 1 ? "s" : ""} a refund.</strong> They paid after their reservation expired and the session filled up, so no ticket was issued.</span></p>
+          <Button size="sm" variant="outline" asChild><Link href="/admin/payments?status=NEEDS_REFUND">Review refunds</Link></Button>
+        </div>
+      )}
 
       <StaggerGroup trigger="mount" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StaggerItem><StatCard label="Today's sales" value={formatMoney(kpis.todayRevenue, currency)} sub={`${kpis.todayTickets} ticket${kpis.todayTickets === 1 ? "" : "s"} today`} icon={Banknote} tone="primary" /></StaggerItem>

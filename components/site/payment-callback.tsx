@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { CheckCircle2, XCircle } from "lucide-react"
+import { CheckCircle2, ReceiptText, XCircle } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { api, errorMessage } from "@/lib/api-client"
 import { DURATION, EASE_OUT } from "@/lib/motion"
 
-type State = { kind: "verifying" } | { kind: "paid"; ticketNumber: string; accessKey: string } | { kind: "pending"; bookingId: string } | { kind: "failed"; reason: string | null; bookingId: string | null } | { kind: "error"; message: string }
+type State = { kind: "verifying" } | { kind: "paid"; ticketNumber: string; accessKey: string } | { kind: "pending"; bookingId: string } | { kind: "failed"; reason: string | null; bookingId: string | null } | { kind: "refund"; reason: string } | { kind: "error"; message: string }
 
 /**
  * After the provider redirects back we ask OUR server to verify the payment
@@ -28,11 +28,13 @@ export function PaymentCallback() {
     let cancelled = false
     const verify = async () => {
       try {
-        const res = await api.get<{ status: "PAID" | "PENDING" | "FAILED"; ticketNumber?: string; accessKey?: string; reason?: string | null; bookingId?: string }>(`/api/payments/verify?reference=${encodeURIComponent(reference)}`)
+        const res = await api.get<{ status: "PAID" | "PENDING" | "FAILED" | "REFUND_REQUIRED"; ticketNumber?: string; accessKey?: string; reason?: string | null; bookingId?: string }>(`/api/payments/verify?reference=${encodeURIComponent(reference)}`)
         if (cancelled) return
         if (res.data.status === "PAID") {
           setState({ kind: "paid", ticketNumber: res.data.ticketNumber!, accessKey: res.data.accessKey! })
           setTimeout(() => router.replace(`/tickets/${res.data.ticketNumber}?k=${res.data.accessKey}&new=1`), 900)
+        } else if (res.data.status === "REFUND_REQUIRED") {
+          setState({ kind: "refund", reason: res.data.reason ?? "" })
         } else if (res.data.status === "PENDING" && attempts.current < 10) {
           attempts.current += 1
           setState({ kind: "pending", bookingId: res.data.bookingId ?? "" })
@@ -79,6 +81,20 @@ export function PaymentCallback() {
             </div>
             <h1 className="mt-6 text-2xl font-bold">Payment confirmed</h1>
             <p className="mt-2 text-muted-foreground">Preparing your ticket {state.ticketNumber}…</p>
+          </motion.div>
+        )}
+        {state.kind === "refund" && (
+          <motion.div key="refund" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: DURATION.base, ease: EASE_OUT }}>
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-warning/15">
+              <ReceiptText className="size-8 text-[var(--warning-text)]" />
+            </div>
+            <h1 className="mt-6 text-2xl font-bold">Session filled up — refund on the way</h1>
+            <p className="mt-2 text-muted-foreground">{state.reason}</p>
+            <div className="mt-8 flex justify-center">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/sessions">Find another session</Link>
+              </Button>
+            </div>
           </motion.div>
         )}
         {(state.kind === "failed" || state.kind === "error") && (

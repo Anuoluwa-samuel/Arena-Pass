@@ -1,8 +1,8 @@
 "use client"
 
 import { useRef, useState, type ReactNode } from "react"
-import { motion, useReducedMotion } from "motion/react"
-import { useMediaQuery } from "@/hooks/use-mobile"
+import { motion } from "motion/react"
+import { useMediaQuery, useReducedMotionSafe } from "@/hooks/use-mobile"
 
 /**
  * Subtle magnetic-hover wrapper — nudges its child a few pixels toward the
@@ -15,7 +15,7 @@ export function Magnetic({ children, strength = 12 }: { children: ReactNode; str
   const ref = useRef<HTMLDivElement>(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const enabled = useMediaQuery("(hover: hover) and (pointer: fine)")
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
 
   if (reduce || !enabled) {
     return <>{children}</>

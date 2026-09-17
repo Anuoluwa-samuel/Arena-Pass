@@ -1,18 +1,25 @@
 "use client"
 
-import { Reveal } from "@/components/motion"
+import { motion } from "motion/react"
+import { useReducedMotionSafe } from "@/hooks/use-mobile"
+import { DURATION, EASE_OUT } from "@/lib/motion"
 
 /**
- * Next.js remounts this per navigation (unlike layout.tsx, which persists),
- * so every route gets the same brief, deliberate arrival instead of a hard
- * cut — the thing that makes the app read as one continuous experience
- * rather than a stack of disconnected pages. Kept short (see DURATION.base
- * in lib/motion.ts) so it never reads as a loading screen.
+ * Next.js remounts this per navigation (unlike layout.tsx), so every route
+ * arrives with the same short lift out of a soft blur. The filter is removed
+ * when the entrance ends: a lingering `filter` would make this wrapper a
+ * backdrop root and every glass surface inside would stop blurring.
  */
 export default function Template({ children }: { children: React.ReactNode }) {
+  const reduce = useReducedMotionSafe()
+  if (reduce) return <>{children}</>
   return (
-    <Reveal trigger="mount" y={6}>
+    <motion.div
+      initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)", transitionEnd: { filter: "none", transform: "none" } }}
+      transition={{ duration: DURATION.base, ease: EASE_OUT }}
+    >
       {children}
-    </Reveal>
+    </motion.div>
   )
 }

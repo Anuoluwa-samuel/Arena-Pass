@@ -1,115 +1,225 @@
 import Link from "next/link"
-import { ChevronRight, Megaphone } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Reveal, StaggerGroup, StaggerItem } from "@/components/motion"
+import { CalendarClock, MapPin, Megaphone, Users } from "lucide-react"
+import { BlurText, CountUp, Parallax, Reveal, StaggerGroup, StaggerItem } from "@/components/motion"
 import { Magnetic } from "@/components/magnetic"
+import { Marquee } from "@/components/marquee"
 import { ScrollCue } from "@/components/scroll-cue"
 import { SessionCard } from "@/components/session-card"
+import { Spotlight } from "@/components/spotlight"
+import { CountdownTimer } from "@/components/countdown-timer"
+import { ArrowButton } from "@/components/ui/arrow-button"
+import { SectionLabel } from "@/components/shared/section-label"
+import { SessionStatusBadge } from "@/components/shared/status-badge"
 import { CmsIcon } from "@/components/site/cms-icon"
-import { getFeaturedSessions, getPublicSiteContent } from "@/server/services/public-content"
+import { FaqList } from "@/components/site/faq-list"
+import { HeroSteps } from "@/components/site/hero-steps"
+import { formatMoney, formatShortDate, formatTimeRange } from "@/lib/format"
+import { getFeaturedSessions, getPublicSessions, getPublicSiteContent } from "@/server/services/public-content"
 
 export const dynamic = "force-dynamic"
 
 export default async function LandingPage() {
   const content = await getPublicSiteContent()
   const { homepage, services, faqs, announcements, banners } = content
-  const featured = homepage.featuredSessionsCount > 0 ? await getFeaturedSessions(homepage.featuredSessionsCount) : []
-  const openCount = featured.filter((s) => s.status === "OPEN_FOR_BOOKING").length
-  const slotsLeft = featured.filter((s) => s.status === "OPEN_FOR_BOOKING").reduce((n, s) => n + s.availableSlots, 0)
+  const [featured, sessions] = await Promise.all([
+    homepage.featuredSessionsCount > 0 ? getFeaturedSessions(homepage.featuredSessionsCount) : Promise.resolve([]),
+    getPublicSessions(),
+  ])
+  // Stats count every public session (same source as the Sessions page), not just the featured few.
+  const open = sessions.filter((s) => s.status === "OPEN_FOR_BOOKING")
+  const openCount = open.length
+  const slotsLeft = open.reduce((n, s) => n + s.availableSlots, 0)
+  const playersPerTeam = sessions[0]?.playersPerTeam ?? 4
   const announcement = announcements[0]
+  // The soonest session a visitor can act on: open first, else the next one opening.
+  const next = open[0] ?? sessions.find((s) => s.status === "PUBLISHED")
+  const hasImage = Boolean(homepage.hero.imageUrl)
+  // Over a photo, the rail's small mono text needs a frosted backing to stay readable.
+  const railPanel = "glass rounded-2xl p-5 [--glass-bg:color-mix(in_oklch,var(--background)_62%,transparent)] dark:[--glass-bg:color-mix(in_oklch,var(--background)_45%,transparent)]"
+
+  // Section numbers follow what is actually rendered, so they never skip.
+  let n = 0
+  const nextIndex = () => ++n
+
+  const ticker = [
+    "Secure payments",
+    "Instant QR tickets",
+    ...homepage.howItWorks.steps.map((s) => s.title),
+    ...services.map((s) => s.title),
+  ]
 
   return (
     <div>
       {announcement && (
-        <div className="border-b border-primary/20 bg-primary/10">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 text-sm sm:px-6 lg:px-8">
-            <Megaphone className="size-4 shrink-0 text-primary" />
+        <div className="mx-auto max-w-7xl px-3 pt-4 sm:px-6">
+          <Reveal trigger="mount" className="glass flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm">
+            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+              <Megaphone className="size-3.5" />
+            </span>
             <p className="min-w-0 truncate">
               <span className="font-semibold text-primary">{announcement.title}</span>
               <span className="text-muted-foreground"> — {announcement.content}</span>
             </p>
-          </div>
+          </Reveal>
         </div>
       )}
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          {homepage.hero.imageUrl && (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={homepage.hero.imageUrl} alt="" aria-hidden="true" fetchPriority="high" className="absolute inset-0 size-full object-cover" />
-              {/* Scrim fading into the page background. Light mode is much thinner so the photo shows through
-                  (a heavy near-white wash washed it out); dark mode keeps its original strength. */}
-              <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-background/30 to-background dark:from-background/85 dark:via-background/75" />
-              {/* Light mode only: a soft glow behind the text block keeps the headline and description readable
-                  over a thinner scrim, fading out so the rest of the image stays vivid. */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_42%_at_50%_48%,color-mix(in_oklch,var(--background)_72%,transparent),transparent_78%)] dark:hidden" />
-            </>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-          <div className="animate-float-a absolute right-0 top-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary/10 blur-3xl" />
-          <div className="animate-float-b absolute bottom-0 left-0 -z-10 h-[300px] w-[300px] rounded-full bg-primary/5 blur-3xl" />
-          <div className="pitch-lines absolute inset-0 [opacity:var(--pitch-opacity)]" aria-hidden="true" />
-        </div>
-        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
-          <StaggerGroup trigger="mount" stagger={0.12} delayChildren={0.05} className="mx-auto max-w-2xl text-center">
-            {homepage.hero.badge && (
-              <StaggerItem className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-primary">
-                <span className="relative flex size-2">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex size-2 rounded-full bg-primary" />
-                </span>
-                {openCount > 0 ? `${openCount} session${openCount === 1 ? "" : "s"} open · ${slotsLeft} slots left` : homepage.hero.badge}
-              </StaggerItem>
-            )}
-            <StaggerItem>
-              <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-6xl">
-                {homepage.hero.title} <span className="text-primary">{homepage.hero.highlight}</span>
-              </h1>
-            </StaggerItem>
-            <StaggerItem>
-              {/* Over a photo in light mode the muted grey dips below 4.5:1, so the description uses the solid
-                  dark text colour there; dark mode (and the no-image hero) keep the muted tone. */}
-              <p className={`mt-6 text-pretty text-lg leading-relaxed ${homepage.hero.imageUrl ? "text-secondary-foreground dark:text-muted-foreground" : "text-muted-foreground"}`}>{homepage.hero.description}</p>
-            </StaggerItem>
-            <StaggerItem className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+      {/* ------------------------------------------------------------ Hero */}
+      <section className="relative isolate overflow-hidden">
+        {hasImage && (
+          <div className="absolute inset-0 -z-10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={homepage.hero.imageUrl!} alt="" aria-hidden="true" fetchPriority="high" className="absolute inset-0 size-full object-cover" />
+            {/* Scrim fading into the page background. Light mode is thinner so the photo shows through;
+                dark mode keeps its original strength. */}
+            <div className="absolute inset-0 bg-gradient-to-b from-background/45 via-background/30 to-background dark:from-background/85 dark:via-background/75" />
+            {/* Light mode only: a soft glow behind the text keeps it readable over the thinner scrim. */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_62%_45%,color-mix(in_oklch,var(--background)_72%,transparent),transparent_78%)] dark:hidden" />
+          </div>
+        )}
+
+        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl content-center gap-14 px-4 pb-24 pt-14 sm:px-6 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,2fr)] lg:gap-10 lg:px-8">
+          {/* Side rail: the play, in steps. */}
+          <Reveal trigger="mount" delay={0.35} className="order-2 flex flex-col justify-end lg:order-1 lg:py-4">
+            <div className={hasImage ? railPanel : undefined}>
+              <SectionLabel>The play</SectionLabel>
+              <div className="mt-4">
+                <HeroSteps steps={homepage.howItWorks.steps.map((s) => s.title)} />
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Headline block */}
+          <div className="order-1 lg:order-2">
+            <BlurText
+              as="h1"
+              trigger="mount"
+              text={homepage.hero.title}
+              highlight={homepage.hero.highlight}
+              stagger={0.07}
+              className="text-balance text-[clamp(3.25rem,9vw,7.5rem)] font-semibold uppercase leading-[0.88]"
+            />
+            <Reveal trigger="mount" delay={0.45}>
+              <p
+                className={`mt-8 max-w-xl text-pretty text-lg leading-relaxed ${hasImage ? "text-secondary-foreground dark:text-muted-foreground" : "text-muted-foreground"}`}
+              >
+                {homepage.hero.description}
+              </p>
+            </Reveal>
+            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Magnetic>
-                <Button size="lg" asChild className="w-full sm:w-auto">
-                  <Link href={homepage.hero.primaryCta.href}>
-                    {homepage.hero.primaryCta.label}
-                    <ChevronRight className="ml-1 size-4" />
-                  </Link>
-                </Button>
+                <ArrowButton asChild variant="primary" className="w-full sm:w-auto">
+                  <Link href={homepage.hero.primaryCta.href}>{homepage.hero.primaryCta.label}</Link>
+                </ArrowButton>
               </Magnetic>
-              <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
+              <ArrowButton asChild className="w-full sm:w-auto">
                 <Link href={homepage.hero.secondaryCta.href}>{homepage.hero.secondaryCta.label}</Link>
-              </Button>
-            </StaggerItem>
-          </StaggerGroup>
+              </ArrowButton>
+            </Reveal>
+
+            {/* Next kick-off */}
+            {next && (
+              <Reveal trigger="mount" delay={0.8} y={28} className="mt-14">
+                {/* Heavier tint than other glass: this card can sit over a bright hero photo. */}
+                <Spotlight className="glass rounded-3xl p-2 [--glass-bg:color-mix(in_oklch,var(--background)_62%,transparent)] dark:[--glass-bg:color-mix(in_oklch,var(--background)_45%,transparent)]">
+                  <div className="grid gap-2 sm:grid-cols-[1.1fr_1fr]">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/25 via-primary/5 to-transparent p-6">
+                      <div aria-hidden="true" className="dot-grid absolute inset-0 opacity-70" />
+                      <div className="relative">
+                        <div className="flex items-center justify-between gap-3">
+                          <SectionLabel>Next kick-off</SectionLabel>
+                          <SessionStatusBadge status={next.status} pulse={next.status === "OPEN_FOR_BOOKING"} />
+                        </div>
+                        <p className="mt-6 font-display text-3xl font-semibold uppercase leading-none">{next.title}</p>
+                        <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+                          <p className="flex items-center gap-2"><CalendarClock className="size-4 text-primary" />{formatShortDate(next.startsAt)} · {formatTimeRange(next.startsAt, next.endsAt)}</p>
+                          <p className="flex items-center gap-2"><MapPin className="size-4 text-primary" />{next.venue}</p>
+                          <p className="flex items-center gap-2"><Users className="size-4 text-primary" />{next.availableSlots} of {next.totalCapacity} slots left</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-between gap-6 p-5">
+                      <div>
+                        <p className="label-mono text-muted-foreground">{next.status === "OPEN_FOR_BOOKING" ? "Booking closes in" : "Booking opens in"}</p>
+                        <div className="mt-3">
+                          <CountdownTimer targetDate={new Date(next.status === "OPEN_FOR_BOOKING" ? next.bookingDeadline : next.bookingOpensAt)} variant="compact" />
+                        </div>
+                      </div>
+                      <div className="flex items-end justify-between gap-4">
+                        <p className="font-display text-4xl font-semibold text-primary">{formatMoney(next.ticketPrice, next.currency)}</p>
+                        <ArrowButton asChild size="sm" variant={next.status === "OPEN_FOR_BOOKING" ? "primary" : "glass"}>
+                          <Link href={`/sessions/${next.id}`}>{next.status === "OPEN_FOR_BOOKING" ? "Book now" : "Details"}</Link>
+                        </ArrowButton>
+                      </div>
+                    </div>
+                  </div>
+                </Spotlight>
+              </Reveal>
+            )}
+          </div>
         </div>
         <ScrollCue />
       </section>
 
-      {/* Featured sessions */}
-      {featured.length > 0 && (
-        <section className="border-t border-border py-20">
+      {/* ---------------------------------------------------------- Ticker */}
+      <div className="border-y border-border/70 py-6">
+        <Marquee items={ticker} className="font-display text-2xl font-semibold uppercase text-foreground/85 sm:text-3xl" />
+      </div>
+
+      {/* ---------------------------------------------------- Live numbers */}
+      {sessions.length > 0 && (
+        <section className="py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="flex items-end justify-between gap-4">
+            <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:items-end">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">This week</p>
-                <h2 className="mt-1 text-3xl font-bold tracking-tight">Upcoming sessions</h2>
+                <Reveal><SectionLabel index={nextIndex()}>Match day</SectionLabel></Reveal>
+                <BlurText text="Numbers that move" highlight="every minute" className="mt-5 text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-5xl" />
               </div>
-              <Button variant="ghost" asChild>
-                <Link href="/sessions">
-                  All sessions <ChevronRight className="ml-1 size-4" />
-                </Link>
-              </Button>
-            </Reveal>
-            <StaggerGroup className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" stagger={0.1}>
+              <Reveal delay={0.1}>
+                <p className="max-w-md text-pretty text-muted-foreground lg:ml-auto">Live from the booking board. Slots go fast once a session opens — these update as players book.</p>
+              </Reveal>
+            </div>
+            <StaggerGroup className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.1}>
+              {[
+                { value: openCount, label: "Sessions open", note: "Booking right now" },
+                { value: slotsLeft, label: "Slots left", note: "Across open sessions" },
+                { value: playersPerTeam, label: "Players per team", note: "Every team, every session" },
+                { value: sessions.length, label: "Upcoming sessions", note: "On the calendar" },
+              ].map((stat) => (
+                <StaggerItem key={stat.label}>
+                  <Spotlight className="glass group h-full rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-1">
+                    <p className="label-mono text-muted-foreground">{stat.label}</p>
+                    <p className="mt-10 font-display text-7xl font-semibold tabular-nums">
+                      <CountUp value={stat.value} />
+                    </p>
+                    <p className="mt-3 text-sm text-muted-foreground">{stat.note}</p>
+                    <span aria-hidden="true" className="mt-6 block h-px w-10 bg-gradient-to-r from-primary to-transparent transition-all duration-500 group-hover:w-full" />
+                  </Spotlight>
+                </StaggerItem>
+              ))}
+            </StaggerGroup>
+          </div>
+        </section>
+      )}
+
+      {/* -------------------------------------------------------- Sessions */}
+      {featured.length > 0 && (
+        <section className="py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <Reveal><SectionLabel index={nextIndex()}>Sessions</SectionLabel></Reveal>
+                <BlurText text="Upcoming sessions" className="mt-5 text-4xl font-semibold uppercase sm:text-5xl" />
+              </div>
+              <Reveal delay={0.1}>
+                <ArrowButton asChild>
+                  <Link href="/sessions">All sessions</Link>
+                </ArrowButton>
+              </Reveal>
+            </div>
+            <StaggerGroup className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" stagger={0.1}>
               {featured.map((s) => (
-                <StaggerItem key={s.id}>
+                <StaggerItem key={s.id} className="h-full">
                   <SessionCard session={s} />
                 </StaggerItem>
               ))}
@@ -118,46 +228,64 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* How it works */}
-      <section className="border-t border-border bg-secondary/30 py-24">
+      {/* ---------------------------------------------------- How it works */}
+      <section className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{homepage.howItWorks.title}</h2>
-            <p className="mt-4 text-lg text-muted-foreground">{homepage.howItWorks.subtitle}</p>
-          </Reveal>
-          <StaggerGroup className="mt-16 grid gap-8 sm:grid-cols-3" stagger={0.12}>
-            {homepage.howItWorks.steps.map((step, i) => (
-              <StaggerItem key={i}>
-                <div className="group relative flex flex-col items-center text-center">
-                  <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 transition-transform duration-300 ease-out group-hover:scale-105">
-                    <CmsIcon name={step.icon} className="size-8 text-primary" />
-                  </div>
-                  <span className="absolute -right-4 -top-2 flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground sm:-right-8">{i + 1}</span>
-                  <h3 className="mt-6 text-xl font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-muted-foreground">{step.description}</p>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerGroup>
+          <div className="max-w-2xl">
+            <Reveal><SectionLabel index={nextIndex()}>How it works</SectionLabel></Reveal>
+            <BlurText text={homepage.howItWorks.title} className="mt-5 text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-5xl" />
+            <Reveal delay={0.1}><p className="mt-5 text-lg text-muted-foreground">{homepage.howItWorks.subtitle}</p></Reveal>
+          </div>
+          <div className="relative mt-16">
+            {/* Connector that draws itself across the steps on wide screens. */}
+            <Reveal className="absolute inset-x-[8%] top-[3.25rem] hidden h-px origin-left bg-gradient-to-r from-primary/0 via-primary/60 to-primary/0 lg:block" y={0}>
+              <span />
+            </Reveal>
+            <StaggerGroup className="grid gap-4 lg:grid-cols-3" stagger={0.14}>
+              {homepage.howItWorks.steps.map((step, i) => (
+                <StaggerItem key={i} className="h-full">
+                  <Spotlight className="glass group relative h-full rounded-2xl p-7 transition-transform duration-500 hover:-translate-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="relative grid size-14 place-items-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/25 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-4deg]">
+                        <span aria-hidden="true" className="absolute inset-0 rounded-2xl bg-primary/30 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+                        <CmsIcon name={step.icon} className="relative size-6" />
+                      </div>
+                      <span className="font-display text-6xl font-semibold text-foreground/10 transition-colors duration-500 group-hover:text-primary/40">{String(i + 1).padStart(2, "0")}</span>
+                    </div>
+                    <h3 className="mt-8 text-2xl font-semibold uppercase">{step.title}</h3>
+                    <p className="mt-2 leading-relaxed text-muted-foreground">{step.description}</p>
+                  </Spotlight>
+                </StaggerItem>
+              ))}
+            </StaggerGroup>
+          </div>
         </div>
       </section>
 
-      {/* Services */}
+      {/* -------------------------------------------------------- Services */}
       {services.length > 0 && (
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="max-w-2xl">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{content.servicesPage.title}</h2>
-              <p className="mt-4 text-lg text-muted-foreground">{content.servicesPage.subtitle}</p>
-            </Reveal>
-            <StaggerGroup className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.08}>
-              {services.map((s) => (
-                <StaggerItem key={s.id}>
-                  <div className="h-full rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
-                    <CmsIcon name={s.icon} className="size-6 text-primary" />
-                    <h3 className="mt-4 font-semibold">{s.title}</h3>
+            <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-end">
+              <div>
+                <Reveal><SectionLabel index={nextIndex()}>Services</SectionLabel></Reveal>
+                <BlurText text={content.servicesPage.title} className="mt-5 text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-5xl" />
+              </div>
+              <Reveal delay={0.1}><p className="max-w-lg text-pretty text-lg text-muted-foreground lg:ml-auto">{content.servicesPage.subtitle}</p></Reveal>
+            </div>
+            <StaggerGroup className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.08}>
+              {services.map((s, i) => (
+                <StaggerItem key={s.id} className="h-full">
+                  <Spotlight className="glass group h-full rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-1">
+                    <div className="flex items-start justify-between">
+                      <span className="grid size-11 place-items-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20 transition-transform duration-500 group-hover:scale-110">
+                        <CmsIcon name={s.icon} className="size-5" />
+                      </span>
+                      <span className="label-mono text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
+                    </div>
+                    <h3 className="mt-8 text-xl font-semibold uppercase">{s.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
-                  </div>
+                  </Spotlight>
                 </StaggerItem>
               ))}
             </StaggerGroup>
@@ -165,24 +293,26 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* Banner */}
+      {/* ---------------------------------------------------------- Banner */}
       {banners[0] && (
         <section className="pb-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Reveal className="relative overflow-hidden rounded-2xl border border-border bg-card">
+            <Reveal y={24} className="glass relative overflow-hidden rounded-3xl">
               {banners[0].imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={banners[0].imageUrl} alt="" className="absolute inset-0 size-full object-cover opacity-30" />
+                <Parallax distance={30} className="absolute inset-[-10%]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={banners[0].imageUrl} alt="" className="size-full object-cover opacity-30" />
+                </Parallax>
               )}
-              <div className="relative flex flex-col items-start gap-4 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">
+              <div className="relative flex flex-col items-start gap-6 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-12">
                 <div>
-                  <h3 className="text-2xl font-bold">{banners[0].title}</h3>
+                  <h3 className="text-4xl font-semibold uppercase">{banners[0].title}</h3>
                   {banners[0].subtitle && <p className="mt-2 text-muted-foreground">{banners[0].subtitle}</p>}
                 </div>
                 {banners[0].linkUrl && (
-                  <Button asChild size="lg">
+                  <ArrowButton asChild variant="primary">
                     <Link href={banners[0].linkUrl}>{banners[0].linkLabel || "Learn more"}</Link>
-                  </Button>
+                  </ArrowButton>
                 )}
               </div>
             </Reveal>
@@ -190,44 +320,42 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* FAQ */}
+      {/* ------------------------------------------------------------- FAQ */}
       {faqs.length > 0 && (
-        <section className="border-t border-border bg-secondary/30 py-24">
+        <section className="py-24">
           <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:px-8">
-            <Reveal>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Questions, answered</h2>
-              <p className="mt-4 text-muted-foreground">Everything you need to know before your first session.</p>
-              <Button variant="outline" asChild className="mt-6">
-                <Link href="/faq">See all FAQs</Link>
-              </Button>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <Accordion type="single" collapsible className="rounded-2xl border border-border bg-card px-6">
-                {faqs.slice(0, 4).map((f) => (
-                  <AccordionItem key={f.id} value={f.id}>
-                    <AccordionTrigger className="text-left">{f.question}</AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">{f.answer}</AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </Reveal>
+            <div>
+              <Reveal><SectionLabel index={nextIndex()}>FAQ</SectionLabel></Reveal>
+              <BlurText text="Questions," highlight="answered" className="mt-5 text-4xl font-semibold uppercase sm:text-5xl" />
+              <Reveal delay={0.1}>
+                <p className="mt-5 text-muted-foreground">Everything you need to know before your first session.</p>
+                <ArrowButton asChild className="mt-8">
+                  <Link href="/faq">See all FAQs</Link>
+                </ArrowButton>
+              </Reveal>
+            </div>
+            <FaqList faqs={faqs.slice(0, 4)} />
           </div>
         </section>
       )}
 
-      {/* CTA */}
+      {/* ------------------------------------------------------------- CTA */}
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal y={24} className="overflow-hidden rounded-2xl bg-primary p-8 sm:p-12">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">{homepage.cta.title}</h2>
-              <p className="mt-4 text-lg text-primary-foreground/80">{homepage.cta.description}</p>
-              <Button size="lg" variant="secondary" asChild className="mt-8">
-                <Link href={homepage.cta.buttonHref}>
-                  {homepage.cta.buttonLabel}
-                  <ChevronRight className="ml-1 size-4" />
-                </Link>
-              </Button>
+          <Reveal y={32} className="glass relative isolate overflow-hidden rounded-[2rem] px-6 py-20 text-center sm:px-12 sm:py-28">
+            <div aria-hidden="true" className="absolute inset-0 -z-10">
+              <div className="animate-glow-breathe absolute -bottom-1/2 left-1/2 h-[120%] w-[80%] -translate-x-1/2 rounded-full bg-primary/40 blur-[100px]" />
+              <div className="dot-grid absolute inset-0" />
+            </div>
+            <SectionLabel className="justify-center">Kick-off</SectionLabel>
+            <BlurText text={homepage.cta.title} className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-6xl" />
+            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">{homepage.cta.description}</p>
+            <div className="mt-10 flex justify-center">
+              <Magnetic>
+                <ArrowButton asChild variant="primary">
+                  <Link href={homepage.cta.buttonHref}>{homepage.cta.buttonLabel}</Link>
+                </ArrowButton>
+              </Magnetic>
             </div>
           </Reveal>
         </div>

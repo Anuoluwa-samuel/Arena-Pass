@@ -59,6 +59,8 @@ export async function ensureBaseline(database: Database) {
   if (Number(count) === 0) {
     const email = process.env.BOOTSTRAP_ADMIN_EMAIL ?? "admin@arenapass.local"
     const password = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "ChangeMe123!"
+    // A public deployment must never get the well-known development login.
+    if (process.env.NODE_ENV === "production") assertSafeBootstrapAdmin(process.env.BOOTSTRAP_ADMIN_EMAIL, process.env.BOOTSTRAP_ADMIN_PASSWORD)
     const superAdmin = (await database.query.roles.findFirst({ where: eq(schema.roles.key, "SUPER_ADMIN") }))!
     await database.insert(schema.users).values({
       arenaId: arena.id,
@@ -68,5 +70,15 @@ export async function ensureBaseline(database: Database) {
       passwordHash: await hashPassword(password),
     })
     logger.warn("baseline.admin_created", { email, note: "Change this password immediately" })
+  }
+}
+
+/** Refuses the development defaults or a weak password for the first production admin. */
+export function assertSafeBootstrapAdmin(email: string | undefined, password: string | undefined) {
+  if (!email || email.toLowerCase() === "admin@arenapass.local") {
+    throw new Error("Set BOOTSTRAP_ADMIN_EMAIL to a real address before the first production start")
+  }
+  if (!password || password === "ChangeMe123!" || password.length < 12) {
+    throw new Error("Set BOOTSTRAP_ADMIN_PASSWORD to a strong password (12+ characters, not the development default) before the first production start")
   }
 }

@@ -9,9 +9,8 @@ import { cn } from "@/lib/utils"
 /** Smoke backdrop + brand mark shared by the customer and admin sign-in pages. */
 export function AuthShell({ siteName, children, className }: { siteName: string; children: ReactNode; className?: string }) {
   return (
-    // Defaults to full height below the 4rem site navbar (pages without one pass `min-h-svh`);
-    // `isolate` keeps the smoke behind this section only.
-    <section className={cn("relative isolate flex min-h-[calc(100svh-4rem)] items-center justify-center overflow-hidden px-4 py-12", className)}>
+    // Auth pages render without a navbar, so the shell fills the viewport; `isolate` keeps the smoke behind this section only.
+    <section className={cn("relative isolate flex min-h-svh items-center justify-center overflow-hidden px-4 py-12", className)}>
       <SmokeyBackground className="-z-10" />
       <div className="flex w-full max-w-sm flex-col items-center">
         <Reveal trigger="mount" y={8}>

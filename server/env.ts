@@ -26,7 +26,9 @@ const schema = z.object({
   PAYSTACK_PUBLIC_KEY: z.string().optional(),
 
   // Media storage
-  STORAGE_DRIVER: z.enum(["local"]).default("local"),
+  // local: disk (development, single server). blob: Vercel Blob (serverless hosts have no persistent disk).
+  STORAGE_DRIVER: z.enum(["local", "blob"]).default("local"),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
   UPLOAD_DIR: z.string().default("./storage/uploads"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
 
@@ -38,6 +40,10 @@ const schema = z.object({
   EMAIL_PROVIDER: z.enum(["console", "resend"]).default("console"),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("Arena Pass <no-reply@localhost>"),
+
+  // First admin account, created only when the database has no users.
+  BOOTSTRAP_ADMIN_EMAIL: z.string().email().optional(),
+  BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
 
   // Observability
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
@@ -78,6 +84,18 @@ export const env = {
 
 if (enforce && env.PAYMENT_PROVIDER === "mock") {
   throw new Error("PAYMENT_PROVIDER=mock is not allowed in production")
+}
+// Vercel (and any serverless host) has no persistent disk: the embedded
+// database and local uploads would silently vanish between requests.
+const onVercel = Boolean(process.env.VERCEL)
+if (onVercel && !isBuildPhase && !env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required on Vercel (the embedded database cannot persist there). Add a Postgres database, e.g. Neon via Vercel Storage.")
+}
+if (onVercel && !isBuildPhase && env.STORAGE_DRIVER !== "blob") {
+  throw new Error("STORAGE_DRIVER=blob is required on Vercel (local uploads would be lost). Add a Blob store via Vercel Storage.")
+}
+if (env.STORAGE_DRIVER === "blob" && !env.BLOB_READ_WRITE_TOKEN && !isBuildPhase) {
+  throw new Error("BLOB_READ_WRITE_TOKEN is required when STORAGE_DRIVER=blob")
 }
 if (env.PAYMENT_PROVIDER === "paystack" && !env.PAYSTACK_SECRET_KEY) {
   throw new Error("PAYSTACK_SECRET_KEY is required when PAYMENT_PROVIDER=paystack")

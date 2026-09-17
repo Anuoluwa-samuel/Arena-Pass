@@ -1,15 +1,16 @@
 import "server-only"
-import { and, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm"
+import { and, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm"
 import { db, schema, rowsOf, type Transaction } from "@/server/db"
 import { env } from "@/server/env"
 import { AppError, isUniqueViolation } from "@/server/http/errors"
 import { randomToken } from "@/server/auth/tokens"
 import { getPaymentProvider } from "@/server/payments"
+import type { VerifyResult } from "@/server/payments/provider"
 import { logger, serializeError } from "@/server/observability/logger"
 import { recordAudit, SYSTEM_ACTOR, type AuditActor } from "./audit"
 import { newQrToken, nextTicketNumber, releaseConfirmedTicket } from "./tickets"
 import { notify } from "./notifications"
-import { refundEmail, ticketDeliveryEmail } from "@/server/notifications/templates"
+import { refundEmail, refundRequiredAdminEmail, ticketDeliveryEmail } from "@/server/notifications/templates"
 import { getSettings } from "./settings"
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,8 @@ export type VerifyOutcome =
   | { status: "PAID"; payment: schema.Payment; ticket: schema.Ticket }
   | { status: "PENDING"; payment: schema.Payment }
   | { status: "FAILED"; payment: schema.Payment }
+  /** Charged, but no ticket could be issued (the session filled after the hold expired). Admins are alerted to refund. */
+  | { status: "REFUND_REQUIRED"; payment: schema.Payment }
 
 /**
  * The only path that turns a booking into a ticket. Always re-checks with
@@ -86,7 +89,10 @@ export async function verifyPayment(reference: string): Promise<VerifyOutcome> {
   if (payment.status === "PAID") {
     const ticket = await database.query.tickets.findFirst({ where: eq(schema.tickets.bookingId, payment.bookingId) })
     if (ticket) return { status: "PAID", payment, ticket }
+    // Already flagged: don't re-verify or alert admins again.
+    if (payment.refundRequiredAt) return { status: "REFUND_REQUIRED", payment }
   }
+  if (payment.status === "REFUNDED" && payment.refundRequiredAt) return { status: "REFUND_REQUIRED", payment }
   if (payment.status === "FAILED" || payment.status === "REFUNDED") return { status: "FAILED", payment }
 
   const provider = getPaymentProvider()
@@ -115,7 +121,9 @@ export async function verifyPayment(reference: string): Promise<VerifyOutcome> {
     return { status: "FAILED", payment: flagged }
   }
 
-  const confirmed = await database.transaction(async (tx) => {
+  let confirmed: { payment: schema.Payment; ticket: schema.Ticket }
+  try {
+    confirmed = await database.transaction(async (tx) => {
     const [lockedPayment] = await tx.select().from(schema.payments).where(eq(schema.payments.id, payment.id)).for("update")
     if (lockedPayment.status === "PAID") {
       const existing = await tx.query.tickets.findFirst({ where: eq(schema.tickets.bookingId, lockedPayment.bookingId) })
@@ -138,7 +146,13 @@ export async function verifyPayment(reference: string): Promise<VerifyOutcome> {
     const ticket = await confirmBookingAndIssueTicket(tx, paid.bookingId)
     await tx.update(schema.transactions).set({ ticketId: ticket.id }).where(eq(schema.transactions.paymentId, paid.id))
     return { payment: paid, ticket }
-  })
+    })
+  } catch (err) {
+    // The whole confirmation rolled back, but the customer's money was taken.
+    // Record it in its own transaction and alert admins.
+    if (err instanceof AppError && err.code === "SESSION_FULL") return flagRefundRequired(payment.id, result)
+    throw err
+  }
 
   await afterTicketIssued(confirmed.ticket).catch((err) => logger.error("payment.post_confirm_failed", { error: serializeError(err) }))
   return { status: "PAID", ...confirmed }
@@ -172,10 +186,9 @@ async function confirmBookingAndIssueTicket(tx: Transaction, bookingId: string):
        where id = (select id from ${schema.sessionSlots} where session_id = ${booking.sessionId} and status = 'FREE' order by slot_number, team_number limit 1 for update skip locked)
        returning id, team_id`)
     const row = rowsOf<{ id: string; team_id: string }>(reclaimed)[0]
-    if (!row) {
-      await recordAudit(SYSTEM_ACTOR, { action: "payment.refund_required", entityType: "booking", entityId: booking.id, arenaId: booking.arenaId, description: "Payment succeeded after the reservation expired and the session is now full; refund required" }, tx)
-      throw new AppError("SESSION_FULL", "Your reservation expired and the session is now full. Your payment will be refunded.")
-    }
+    // No free slot left. Throwing rolls back this transaction; verifyPayment
+    // catches it and records the charge + refund flag separately.
+    if (!row) throw new AppError("SESSION_FULL", "Your reservation expired and the session is now full. Your payment will be refunded.")
     slotId = row.id
     teamId = row.team_id
     heldDelta = 0
@@ -229,6 +242,102 @@ async function confirmBookingAndIssueTicket(tx: Transaction, bookingId: string):
   }
 }
 
+const REFUND_REQUIRED_REASON = "Paid after the reservation expired; the session filled up in the meantime, so no ticket was issued."
+
+/**
+ * Records a successful charge that could not become a ticket. Runs in its own
+ * transaction (the confirmation one rolled back). Idempotent: concurrent or
+ * repeated verifications (callback page, webhook, reconciliation) alert once.
+ */
+async function flagRefundRequired(paymentId: string, result: VerifyResult): Promise<VerifyOutcome> {
+  const database = await db()
+  const { payment, flaggedNow } = await database.transaction(async (tx) => {
+    const [locked] = await tx.select().from(schema.payments).where(eq(schema.payments.id, paymentId)).for("update")
+    if (locked.refundRequiredAt) return { payment: locked, flaggedNow: false }
+    const now = new Date()
+    const [flagged] = await tx
+      .update(schema.payments)
+      .set({
+        status: "PAID",
+        providerTransactionId: result.providerTransactionId ?? locked.providerTransactionId,
+        channel: result.channel ?? locked.channel,
+        providerPayload: (result.raw as object) ?? locked.providerPayload,
+        verifiedAt: now,
+        refundRequiredAt: now,
+        refundRequiredReason: REFUND_REQUIRED_REASON,
+        updatedAt: now,
+      })
+      .where(eq(schema.payments.id, paymentId))
+      .returning()
+    // The money did arrive, so the ledger records the charge; the refund will offset it.
+    await tx.insert(schema.transactions).values({
+      arenaId: flagged.arenaId,
+      paymentId: flagged.id,
+      type: "CHARGE",
+      amount: flagged.amount,
+      currency: flagged.currency,
+      provider: flagged.provider,
+      providerReference: flagged.providerTransactionId,
+    })
+    return { payment: flagged, flaggedNow: true }
+  })
+  if (flaggedNow) {
+    logger.warn("payment.refund_required", { reference: payment.reference, amount: payment.amount })
+    await recordAudit(SYSTEM_ACTOR, { action: "payment.refund_required", entityType: "payment", entityId: payment.id, arenaId: payment.arenaId, description: `Payment ${payment.reference} succeeded after the reservation expired and the session is full; refund required`, metadata: { amount: payment.amount, currency: payment.currency } })
+    await alertAdminsRefundRequired(payment).catch((err) => logger.error("payment.refund_alert_failed", { reference: payment.reference, error: serializeError(err) }))
+  }
+  return { status: "REFUND_REQUIRED", payment }
+}
+
+/** Emails every active admin who can issue refunds, and records an in-app alert. */
+async function alertAdminsRefundRequired(payment: schema.Payment) {
+  const database = await db()
+  const [customer, booking, settings] = await Promise.all([
+    database.query.customers.findFirst({ where: eq(schema.customers.id, payment.customerId) }),
+    database.query.bookings.findFirst({ where: eq(schema.bookings.id, payment.bookingId) }),
+    getSettings(payment.arenaId),
+  ])
+  const session = booking ? await database.query.sessions.findFirst({ where: eq(schema.sessions.id, booking.sessionId) }) : undefined
+  const paymentsUrl = new URL("/admin/payments?status=NEEDS_REFUND", env.APP_URL).toString()
+  const details = {
+    appName: settings.siteName,
+    customerName: customer?.name ?? "A customer",
+    customerEmail: customer?.email ?? "unknown",
+    sessionTitle: session?.title ?? "a session",
+    reference: payment.reference,
+    amount: payment.amount,
+    currency: payment.currency,
+    paymentsUrl,
+  }
+  const email = refundRequiredAdminEmail(details)
+  await notify({ arenaId: payment.arenaId, recipientType: "system", channel: "IN_APP", type: "payment.refund_required", title: email.subject, body: email.text, data: { paymentId: payment.id } })
+
+  const admins = await database
+    .selectDistinct({ id: schema.users.id, email: schema.users.email })
+    .from(schema.users)
+    .innerJoin(schema.rolePermissions, eq(schema.rolePermissions.roleId, schema.users.roleId))
+    .where(
+      and(
+        eq(schema.rolePermissions.permission, "tickets.refund"),
+        eq(schema.users.isActive, true),
+        isNull(schema.users.deletedAt),
+        or(eq(schema.users.arenaId, payment.arenaId), isNull(schema.users.arenaId))
+      )
+    )
+  for (const admin of admins) {
+    await notify({ arenaId: payment.arenaId, recipientType: "user", recipientId: admin.id, recipientAddress: admin.email, channel: "EMAIL", type: "payment.refund_required", title: email.subject, body: email.text, html: email.html, data: { paymentId: payment.id } })
+  }
+}
+
+/** Charged-but-no-ticket payments still waiting for an admin refund. */
+export async function countPaymentsNeedingRefund(arenaId?: string | null) {
+  const database = await db()
+  const where = [eq(schema.payments.status, "PAID"), isNotNull(schema.payments.refundRequiredAt)]
+  if (arenaId) where.push(eq(schema.payments.arenaId, arenaId))
+  const [{ count }] = await database.select({ count: sql<number>`count(*)::int` }).from(schema.payments).where(and(...where))
+  return Number(count)
+}
+
 async function afterTicketIssued(ticket: schema.Ticket) {
   const database = await db()
   const [customer, session, slot] = await Promise.all([
@@ -270,12 +379,57 @@ export async function handleProviderWebhook(rawBody: string, headers: Headers) {
   const event = await provider.parseWebhook(rawBody, headers)
   if (!event) throw new AppError("FORBIDDEN", "Invalid webhook signature")
   logger.info("payment.webhook", { type: event.type, reference: event.reference })
+  // Acknowledge events we don't act on (refund.processed, transfer.*…): a non-2xx makes the provider retry forever.
+  if (!event.reference) return null
   try {
     return await verifyPayment(event.reference)
   } catch (err) {
     if (err instanceof AppError && err.code === "PAYMENT_NOT_FOUND") return null
     throw err
   }
+}
+
+/** How far back reconciliation looks. Older pending attempts were abandoned; the provider reports them as such anyway. */
+const RECONCILE_MIN_AGE_MS = 2 * 60_000
+const RECONCILE_WINDOW_MS = 48 * 60 * 60_000
+const RECONCILE_BATCH = 50
+
+/**
+ * Re-asks the provider about payments still PENDING, so a customer who paid and
+ * closed the tab still gets their ticket even if the webhook never arrived.
+ * Skips attempts younger than 2 minutes (the customer is probably still on the
+ * payment page). Runs from the housekeeping cron; each payment is independent.
+ */
+export async function reconcilePendingPayments(now = new Date()) {
+  const database = await db()
+  const stale = await database
+    .select({ reference: schema.payments.reference })
+    .from(schema.payments)
+    .where(
+      and(
+        eq(schema.payments.status, "PENDING"),
+        lt(schema.payments.createdAt, new Date(now.getTime() - RECONCILE_MIN_AGE_MS)),
+        gte(schema.payments.createdAt, new Date(now.getTime() - RECONCILE_WINDOW_MS))
+      )
+    )
+    .orderBy(schema.payments.createdAt)
+    .limit(RECONCILE_BATCH)
+
+  const summary = { checked: stale.length, paid: 0, failed: 0, pending: 0, refundRequired: 0, errors: 0 }
+  for (const { reference } of stale) {
+    try {
+      const outcome = await verifyPayment(reference)
+      if (outcome.status === "PAID") summary.paid++
+      else if (outcome.status === "FAILED") summary.failed++
+      else if (outcome.status === "REFUND_REQUIRED") summary.refundRequired++
+      else summary.pending++
+    } catch (err) {
+      summary.errors++
+      logger.warn("payment.reconcile_failed", { reference, error: serializeError(err) })
+    }
+  }
+  if (summary.checked) logger.info("payment.reconciled", summary)
+  return summary
 }
 
 // ---------------------------------------------------------------------------
@@ -287,24 +441,28 @@ export async function refundPayment(paymentId: string, reason: string, ctx: { ac
   if (!payment) throw new AppError("PAYMENT_NOT_FOUND", "Payment not found")
   if (payment.status !== "PAID") throw new AppError("CONFLICT", "Only paid payments can be refunded")
   const ticket = await database.query.tickets.findFirst({ where: eq(schema.tickets.bookingId, payment.bookingId) })
-  if (!ticket) throw new AppError("TICKET_NOT_FOUND", "No ticket found for this payment")
-  if (ticket.status === "REFUNDED") throw new AppError("CONFLICT", "Ticket is already refunded")
+  if (!ticket && !payment.refundRequiredAt) throw new AppError("TICKET_NOT_FOUND", "No ticket found for this payment")
+  if (ticket?.status === "REFUNDED") throw new AppError("CONFLICT", "Ticket is already refunded")
 
   const provider = getPaymentProvider()
   const providerResult = await provider.refund({ providerTransactionId: payment.providerTransactionId ?? payment.reference, amount: payment.amount, reason })
   if (providerResult.status === "failed") throw new AppError("PAYMENT_PROVIDER_ERROR", "The provider rejected the refund")
 
   const result = await database.transaction(async (tx) => {
-    const [lockedTicket] = await tx.select().from(schema.tickets).where(eq(schema.tickets.id, ticket.id)).for("update")
-    const updatedTicket =
-      lockedTicket.status === "CONFIRMED"
-        ? await releaseConfirmedTicket(tx, lockedTicket, "REFUNDED", reason)
-        : (await tx.update(schema.tickets).set({ status: "REFUNDED", paymentStatus: "REFUNDED", refundedAt: new Date(), updatedAt: new Date() }).where(eq(schema.tickets.id, ticket.id)).returning())[0]
+    // Ticketless (refund-required) payments have no slot or ticket to release.
+    let updatedTicket: schema.Ticket | null = null
+    if (ticket) {
+      const [lockedTicket] = await tx.select().from(schema.tickets).where(eq(schema.tickets.id, ticket.id)).for("update")
+      updatedTicket =
+        lockedTicket.status === "CONFIRMED"
+          ? await releaseConfirmedTicket(tx, lockedTicket, "REFUNDED", reason)
+          : (await tx.update(schema.tickets).set({ status: "REFUNDED", paymentStatus: "REFUNDED", refundedAt: new Date(), updatedAt: new Date() }).where(eq(schema.tickets.id, ticket.id)).returning())[0]
+    }
     const [updatedPayment] = await tx.update(schema.payments).set({ status: "REFUNDED", updatedAt: new Date() }).where(eq(schema.payments.id, payment.id)).returning()
     await tx.insert(schema.transactions).values({
       arenaId: payment.arenaId,
       paymentId: payment.id,
-      ticketId: ticket.id,
+      ticketId: ticket?.id ?? null,
       type: "REFUND",
       amount: -payment.amount,
       currency: payment.currency,
@@ -319,10 +477,10 @@ export async function refundPayment(paymentId: string, reason: string, ctx: { ac
   const customer = await database.query.customers.findFirst({ where: eq(schema.customers.id, payment.customerId) })
   if (customer) {
     const settings = await getSettings(payment.arenaId)
-    const email = refundEmail({ appName: settings.siteName, customerName: customer.name, ticketNumber: ticket.ticketNumber, amount: payment.amount, currency: payment.currency })
+    const email = refundEmail({ appName: settings.siteName, customerName: customer.name, itemLabel: ticket ? `ticket ${ticket.ticketNumber}` : `payment ${payment.reference}`, amount: payment.amount, currency: payment.currency })
     await notify({ arenaId: payment.arenaId, recipientType: "customer", recipientId: customer.id, recipientAddress: customer.email, channel: "EMAIL", type: "payment.refund", title: email.subject, body: email.text, html: email.html })
   }
-  await recordAudit(ctx.actor, { action: "payment.refund", entityType: "payment", entityId: payment.id, arenaId: payment.arenaId, description: `Refunded ${ticket.ticketNumber}`, metadata: { amount: payment.amount, reason } })
+  await recordAudit(ctx.actor, { action: "payment.refund", entityType: "payment", entityId: payment.id, arenaId: payment.arenaId, description: `Refunded ${ticket?.ticketNumber ?? payment.reference}`, metadata: { amount: payment.amount, reason } })
   return result
 }
 
@@ -334,7 +492,8 @@ export async function listPayments(opts: { status?: string; from?: Date; to?: Da
   const page = opts.page ?? 1
   const pageSize = opts.pageSize ?? 20
   const where: SQL[] = []
-  if (opts.status && opts.status !== "all") where.push(eq(schema.payments.status, opts.status as schema.Payment["status"]))
+  if (opts.status === "NEEDS_REFUND") where.push(eq(schema.payments.status, "PAID"), isNotNull(schema.payments.refundRequiredAt))
+  else if (opts.status && opts.status !== "all") where.push(eq(schema.payments.status, opts.status as schema.Payment["status"]))
   if (opts.from) where.push(gte(schema.payments.createdAt, opts.from))
   if (opts.to) where.push(lte(schema.payments.createdAt, opts.to))
   if (opts.q) where.push(sql`(${schema.payments.reference} ilike ${"%" + opts.q + "%"} or ${schema.customers.name} ilike ${"%" + opts.q + "%"} or ${schema.customers.email} ilike ${"%" + opts.q + "%"})`)

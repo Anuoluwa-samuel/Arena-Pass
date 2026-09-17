@@ -378,6 +378,9 @@ export const payments = pgTable(
     failureReason: text("failure_reason"),
     providerPayload: jsonb("provider_payload"),
     verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    /** Set when the customer was charged but no ticket could be issued (session filled after the hold expired). Cleared by nothing: status REFUNDED marks it resolved. */
+    refundRequiredAt: timestamp("refund_required_at", { withTimezone: true }),
+    refundRequiredReason: text("refund_required_reason"),
     ...timestamps,
   },
   (t) => [
