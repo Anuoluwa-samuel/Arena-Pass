@@ -418,6 +418,12 @@
   mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
 }
 
+/* Swipeable row (tab strips on phones) without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
 /* Uppercase mono label: "02 /SESSIONS". */
 @utility label-mono {
   font-family: var(--font-mono);

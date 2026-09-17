@@ -38,7 +38,7 @@ export default async function AdminTicketsPage({ searchParams }: { searchParams:
           { key: "price", header: "Paid", cell: (r) => formatMoney(r.ticket.price, r.ticket.currency) },
           { key: "status", header: "Status", cell: (r) => <TicketStatusBadge status={r.ticket.status} /> },
           { key: "purchased", header: "Purchased", hideOnMobile: true, cell: (r) => formatDateTime(r.ticket.purchasedAt) },
-          { key: "actions", header: "", className: "w-12 text-right", hideOnMobile: true, cell: (r) => <TicketRowActions ticket={{ id: r.ticket.id, ticketNumber: r.ticket.ticketNumber, status: r.ticket.status }} canManage={user.permissions.includes("tickets.manage")} /> },
+          { key: "actions", header: "", className: "w-12 text-right", mobileHeader: true, cell: (r) => <TicketRowActions ticket={{ id: r.ticket.id, ticketNumber: r.ticket.ticketNumber, status: r.ticket.status }} canManage={user.permissions.includes("tickets.manage")} /> },
         ]}
       />
       <Suspense><Pagination page={result.meta.page} totalPages={result.meta.totalPages} total={result.meta.total} pageSize={result.meta.pageSize} /></Suspense>

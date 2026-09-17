@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { CountdownTimer } from "@/components/countdown-timer"
 import { api, errorMessage } from "@/lib/api-client"
+import { formatMoney } from "@/lib/format"
 import type { PublicSession, PublicTeam } from "@/server/serializers"
 
 /** Right-hand booking panel: countdowns, the primary CTA, or the waitlist form. */
@@ -54,6 +55,53 @@ export function SessionActions({ session, teams }: { session: PublicSession; tea
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Phones only: the booking panel sits below the team board, so a bar pinned to
+ * the bottom keeps the call to action in reach. It steps aside while the panel
+ * itself is on screen, and only appears when there is something to do.
+ */
+export function MobileBookBar({ session, teams }: { session: PublicSession; teams: PublicTeam[] }) {
+  const router = useRouter()
+  const [panelVisible, setPanelVisible] = useState(false)
+  const isOpen = session.status === "OPEN_FOR_BOOKING"
+  const anyFree = teams.some((t) => t.freeSlots > 0)
+  const canBook = isOpen && anyFree
+  const canWaitlist = session.status === "FULL" || (isOpen && !anyFree)
+
+  useEffect(() => {
+    const panel = document.getElementById("book")
+    if (!panel) return
+    const observer = new IntersectionObserver(([entry]) => setPanelVisible(entry.isIntersecting), { threshold: 0.15 })
+    observer.observe(panel)
+    return () => observer.disconnect()
+  }, [])
+
+  if (!canBook && !canWaitlist) return null
+
+  return (
+    <div
+      className={`glass-bar fixed inset-x-0 bottom-0 z-40 border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-transform duration-300 sm:hidden ${panelVisible ? "translate-y-full" : "translate-y-0"}`}
+      aria-hidden={panelVisible}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-lg font-bold leading-tight text-primary">{formatMoney(session.ticketPrice, session.currency)}</p>
+          <p className="truncate text-xs text-muted-foreground">{canBook ? `${session.availableSlots} of ${session.totalCapacity} slots left` : "Sold out"}</p>
+        </div>
+        {canBook ? (
+          <Button className="shrink-0" tabIndex={panelVisible ? -1 : undefined} onClick={() => router.push(`/checkout/${session.id}`)}>
+            Book a slot
+          </Button>
+        ) : (
+          <Button variant="outline" className="shrink-0" tabIndex={panelVisible ? -1 : undefined} onClick={() => document.getElementById("book")?.scrollIntoView({ behavior: "smooth" })}>
+            Join waitlist
+          </Button>
+        )}
+      </div>
+    </div>
   )
 }
 

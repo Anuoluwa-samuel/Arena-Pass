@@ -28,7 +28,7 @@ export default async function AdminDashboard() {
   const totalPayments = overview.payments.reduce((n, p) => n + p.count, 0)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-sm:space-y-5">
       <PageHeader title={`Good ${greeting()}, ${user.name.split(" ")[0]}`} description="Here's how the arena is doing over the last 30 days." actions={<Button asChild><Link href="/admin/sessions/new">Create session</Link></Button>} />
 
       {canRefund && needsRefund > 0 && (
@@ -38,7 +38,7 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      <StaggerGroup trigger="mount" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <StaggerGroup trigger="mount" className="grid gap-4 max-sm:grid-cols-2 max-sm:gap-3 max-sm:[&>*:last-child]:col-span-2 sm:grid-cols-2 xl:grid-cols-5">
         <StaggerItem><StatCard label="Today's sales" value={formatMoney(kpis.todayRevenue, currency)} sub={`${kpis.todayTickets} ticket${kpis.todayTickets === 1 ? "" : "s"} today`} icon={Banknote} tone="primary" /></StaggerItem>
         <StaggerItem><StatCard label="Tickets sold (30d)" value={kpis.periodTickets} sub={`${kpis.ticketsByStatus.used} scanned in`} icon={Ticket} /></StaggerItem>
         <StaggerItem><StatCard label="Available slots" value={kpis.availableSlots} sub="across bookable sessions" icon={Users} /></StaggerItem>
@@ -46,7 +46,7 @@ export default async function AdminDashboard() {
         <StaggerItem><StatCard label="Revenue (30d)" value={formatMoney(kpis.periodRevenue, currency)} sub={`${kpis.ticketsByStatus.refunded} refunded`} icon={Banknote} tone="primary" /></StaggerItem>
       </StaggerGroup>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 max-sm:grid-cols-1 max-sm:gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-base">Tickets sold per day</CardTitle></CardHeader>
           <CardContent><TimeSeriesChart data={overview.series} metric="tickets" currency={currency} /></CardContent>
@@ -57,7 +57,7 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 max-sm:grid-cols-1 max-sm:gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base">Session occupancy</CardTitle>
@@ -95,7 +95,7 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 max-sm:grid-cols-1 max-sm:gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader><CardTitle className="text-base">Most popular sessions</CardTitle></CardHeader>
           <CardContent>

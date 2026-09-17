@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Reveal } from "@/components/motion"
 import { SessionStatusBadge } from "@/components/shared/status-badge"
 import { TeamGrid } from "@/components/shared/team-grid"
-import { SessionActions } from "@/components/site/session-actions"
+import { MobileBookBar, SessionActions } from "@/components/site/session-actions"
 import { formatDate, formatMoney, formatTimeRange } from "@/lib/format"
 import { getSessionWithTeams } from "@/server/services/sessions"
 import { toPublicSession, toPublicTeams } from "@/server/serializers"
@@ -36,13 +36,13 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
   const teams = toPublicTeams(data.teams)
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <Link href="/sessions" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+    <main className="mx-auto max-w-6xl px-4 py-8 max-sm:pb-28 max-sm:pt-6 sm:px-6 lg:px-8">
+      <Link href="/sessions" className="mb-6 max-sm:mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" />
         Back to sessions
       </Link>
 
-      <Reveal trigger="mount" className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <Reveal trigger="mount" className="mb-8 flex flex-col gap-4 max-sm:mb-6 max-sm:gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <SessionStatusBadge status={session.status} pulse />
           <h1 className="mt-3 text-balance text-3xl font-bold tracking-tight sm:text-4xl">{session.title}</h1>
@@ -57,14 +57,14 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
         </div>
       </Reveal>
 
-      <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-        <div className="space-y-6">
+      <div className="grid gap-8 max-sm:gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="space-y-6 max-sm:space-y-4">
           <Reveal trigger="mount" delay={0.08}>
             <Card>
               <CardHeader>
                 <CardTitle>Session details</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-5 sm:grid-cols-2">
+              <CardContent className="grid gap-5 max-sm:gap-3.5 sm:grid-cols-2">
                 <Detail icon={Calendar} label="Date" value={formatDate(session.startsAt)} />
                 <Detail icon={Clock} label="Kick-off" value={formatTimeRange(session.startsAt, session.endsAt)} />
                 <Detail icon={Users} label="Format" value={`${session.teamsCount} teams × ${session.playersPerTeam} players`} />
@@ -85,9 +85,9 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
 
           <Reveal trigger="mount" delay={0.14}>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 max-sm:gap-2">
                 <CardTitle>Team board</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground max-sm:shrink-0 max-sm:text-xs">
                   <span className="mr-3 inline-flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-sm bg-primary/30" />Taken</span>
                   <span className="inline-flex items-center gap-1.5"><span className="inline-block size-2.5 rounded-sm border border-dashed border-border" />Open</span>
                 </p>
@@ -100,7 +100,7 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
           </Reveal>
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <div id="book" className="space-y-6 max-sm:scroll-mt-24 max-sm:space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Reveal trigger="mount" delay={0.1}>
             <SessionActions session={session} teams={teams} />
           </Reveal>
@@ -113,18 +113,19 @@ export default async function SessionDetailsPage({ params }: { params: Promise<{
           </Reveal>
         </div>
       </div>
+      <MobileBookBar session={session} teams={teams} />
     </main>
   )
 }
 
 function Detail({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-        <Icon className="size-5 text-muted-foreground" />
+    <div className="flex items-start gap-3 max-sm:gap-2.5">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary max-sm:size-8">
+        <Icon className="size-5 text-muted-foreground max-sm:size-4" />
       </div>
-      <div>
-        <p className="text-sm text-muted-foreground">{label}</p>
+      <div className="max-sm:min-w-0 max-sm:text-sm">
+        <p className="text-sm text-muted-foreground max-sm:text-xs">{label}</p>
         <p className="font-medium">{value}</p>
       </div>
     </div>

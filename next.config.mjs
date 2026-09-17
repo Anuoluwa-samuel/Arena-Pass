@@ -14,6 +14,8 @@ const nextConfig = {
   // Keep the embedded Postgres (WASM) and node-postgres out of the bundler.
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   poweredByHeader: false,
+  // Dev only: let phones on the local network load dev assets from this Mac.
+  allowedDevOrigins: ["172.20.10.3", "192.168.*.*", "10.*.*.*", "172.*.*.*"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }]
   },

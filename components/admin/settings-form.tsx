@@ -37,7 +37,7 @@ export function SettingsForm({ initial, canManage }: { initial: Settings; canMan
         <CardHeader><CardTitle className="text-base">Site identity</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <F id="siteName" label="Site name"><Input id="siteName" value={s.siteName} onChange={(e) => set("siteName", e.target.value)} disabled={dis} /></F>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 max-sm:items-end max-sm:gap-3">
             <F id="currency" label="Currency (ISO)"><Input id="currency" value={s.currency} onChange={(e) => set("currency", e.target.value.toUpperCase())} maxLength={3} disabled={dis} /></F>
             <F id="timezone" label="Timezone"><Input id="timezone" value={s.timezone} onChange={(e) => set("timezone", e.target.value)} disabled={dis} /></F>
           </div>
@@ -48,13 +48,13 @@ export function SettingsForm({ initial, canManage }: { initial: Settings; canMan
       <Card>
         <CardHeader><CardTitle className="text-base">Session defaults</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 max-sm:items-end max-sm:gap-3">
             <F id="defaultTeamsCount" label="Teams (max 8)"><Input id="defaultTeamsCount" type="number" min={1} max={8} value={s.defaultTeamsCount} onChange={(e) => set("defaultTeamsCount", Number(e.target.value))} disabled={dis} /></F>
             <F id="defaultPlayersPerTeam" label="Players per team (max 4)"><Input id="defaultPlayersPerTeam" type="number" min={1} max={4} value={s.defaultPlayersPerTeam} onChange={(e) => set("defaultPlayersPerTeam", Number(e.target.value))} disabled={dis} /></F>
           </div>
           <p className="text-xs text-muted-foreground">Default capacity: <span className="font-medium text-foreground">{s.defaultTeamsCount * s.defaultPlayersPerTeam} players</span>. Individual sessions can override within the limits.</p>
           <F id="defaultTicketPrice" label={`Default ticket price (${s.currency}, major units)`}><Input id="defaultTicketPrice" type="number" min={0} value={s.defaultTicketPrice / 100} onChange={(e) => set("defaultTicketPrice", Math.round(Number(e.target.value) * 100))} disabled={dis} /></F>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 max-sm:items-end max-sm:gap-3">
             <F id="bookingHoldMinutes" label="Slot hold (minutes)"><Input id="bookingHoldMinutes" type="number" min={2} max={60} value={s.bookingHoldMinutes} onChange={(e) => set("bookingHoldMinutes", Number(e.target.value))} disabled={dis} /></F>
             <F id="sessionReminderHours" label="Reminder (hours before)"><Input id="sessionReminderHours" type="number" min={0} max={72} value={s.sessionReminderHours} onChange={(e) => set("sessionReminderHours", Number(e.target.value))} disabled={dis} /></F>
           </div>

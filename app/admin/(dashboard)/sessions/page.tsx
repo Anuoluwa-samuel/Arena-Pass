@@ -43,7 +43,7 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
           { key: "format", header: "Format", cell: (s) => `${s.teamsCount} × ${s.playersPerTeam}` },
           { key: "price", header: "Price", cell: (s) => formatMoney(s.ticketPrice, s.currency) },
           { key: "status", header: "Status", cell: (s) => <SessionStatusBadge status={s.effectiveStatus} /> },
-          { key: "actions", header: "", className: "w-12 text-right", hideOnMobile: true, cell: (s) => <SessionRowActions session={{ id: s.id, title: s.title, status: s.status, bookedCount: s.bookedCount }} canManage={canManage} /> },
+          { key: "actions", header: "", className: "w-12 text-right", mobileHeader: true, cell: (s) => <SessionRowActions session={{ id: s.id, title: s.title, status: s.status, bookedCount: s.bookedCount }} canManage={canManage} /> },
         ]}
       />
       <Suspense>

@@ -86,7 +86,7 @@ export default async function LandingPage() {
           </div>
         )}
 
-        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl content-center gap-14 px-4 pb-24 pt-14 sm:px-6 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,2fr)] lg:gap-10 lg:px-8">
+        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl content-center gap-14 px-4 pb-24 pt-14 max-sm:gap-10 max-sm:pb-20 max-sm:pt-8 sm:px-6 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,2fr)] lg:gap-10 lg:px-8">
           {/* Side rail: the play, in steps. */}
           <Reveal trigger="mount" delay={0.35} className="order-2 flex flex-col justify-end lg:order-1 lg:py-4">
             <div className={hasImage ? railPanel : undefined}>
@@ -109,12 +109,12 @@ export default async function LandingPage() {
             />
             <Reveal trigger="mount" delay={0.45}>
               <p
-                className={`mt-8 max-w-xl text-pretty text-lg leading-relaxed ${hasImage ? "text-secondary-foreground dark:text-muted-foreground" : "text-muted-foreground"}`}
+                className={`mt-8 max-w-xl text-pretty text-lg leading-relaxed max-sm:mt-5 max-sm:text-base ${hasImage ? "text-secondary-foreground dark:text-muted-foreground" : "text-muted-foreground"}`}
               >
                 {homepage.hero.description}
               </p>
             </Reveal>
-            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-col gap-3 max-sm:mt-7 sm:flex-row sm:items-center">
               <Magnetic>
                 <ArrowButton asChild variant="primary" className="w-full sm:w-auto">
                   <Link href={primaryCta.href}>{primaryCta.label}</Link>
@@ -127,18 +127,18 @@ export default async function LandingPage() {
 
             {/* Next kick-off */}
             {next && (
-              <Reveal trigger="mount" delay={0.8} y={28} className="mt-14">
+              <Reveal trigger="mount" delay={0.8} y={28} className="mt-14 max-sm:mt-10">
                 {/* Heavier tint than other glass: this card can sit over a bright hero photo. */}
                 <Spotlight className="glass rounded-3xl p-2 [--glass-bg:color-mix(in_oklch,var(--background)_62%,transparent)] dark:[--glass-bg:color-mix(in_oklch,var(--background)_45%,transparent)]">
                   <div className="grid gap-2 sm:grid-cols-[1.1fr_1fr]">
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/25 via-primary/5 to-transparent p-6">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/25 via-primary/5 to-transparent p-6 max-sm:p-5">
                       <div aria-hidden="true" className="dot-grid absolute inset-0 opacity-70" />
                       <div className="relative">
                         <div className="flex items-center justify-between gap-3">
                           <SectionLabel>Next kick-off</SectionLabel>
                           <SessionStatusBadge status={next.status} pulse={next.status === "OPEN_FOR_BOOKING"} />
                         </div>
-                        <p className="mt-6 font-display text-3xl font-semibold uppercase leading-none">{next.title}</p>
+                        <p className="mt-6 font-display text-3xl font-semibold uppercase leading-none max-sm:mt-4 max-sm:text-[1.75rem]">{next.title}</p>
                         <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
                           <p className="flex items-center gap-2"><CalendarClock className="size-4 text-primary" />{formatShortDate(next.startsAt)} · {formatTimeRange(next.startsAt, next.endsAt)}</p>
                           <p className="flex items-center gap-2"><MapPin className="size-4 text-primary" />{next.venue}</p>
@@ -146,7 +146,7 @@ export default async function LandingPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col justify-between gap-6 p-5">
+                    <div className="flex flex-col justify-between gap-6 p-5 max-sm:gap-4 max-sm:pt-3">
                       <div>
                         <p className="label-mono text-muted-foreground">{next.status === "OPEN_FOR_BOOKING" ? "Booking closes in" : "Booking opens in"}</p>
                         <div className="mt-3">
@@ -154,7 +154,7 @@ export default async function LandingPage() {
                         </div>
                       </div>
                       <div className="flex items-end justify-between gap-4">
-                        <p className="font-display text-4xl font-semibold text-primary">{formatMoney(next.ticketPrice, next.currency)}</p>
+                        <p className="font-display text-4xl font-semibold text-primary max-sm:text-3xl">{formatMoney(next.ticketPrice, next.currency)}</p>
                         <ArrowButton asChild size="sm" variant={next.status === "OPEN_FOR_BOOKING" ? "primary" : "glass"}>
                           <Link href={`/sessions/${next.id}`}>{next.status === "OPEN_FOR_BOOKING" ? "Book now" : "Details"}</Link>
                         </ArrowButton>
@@ -170,15 +170,15 @@ export default async function LandingPage() {
       </section>
 
       {/* ---------------------------------------------------------- Ticker */}
-      <div className="border-y border-border/70 py-6">
-        <Marquee items={ticker} className="font-display text-2xl font-semibold uppercase text-foreground/85 sm:text-3xl" />
+      <div className="border-y border-border/70 py-6 max-sm:py-4">
+        <Marquee items={ticker} className="font-display text-2xl font-semibold uppercase text-foreground/85 max-sm:text-xl sm:text-3xl" />
       </div>
 
       {/* ---------------------------------------------------- Live numbers */}
       {sessions.length > 0 && (
-        <section className="py-24 sm:py-32">
+        <section className="py-24 max-sm:py-16 sm:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:items-end">
+            <div className="grid gap-10 max-sm:gap-5 lg:grid-cols-[1fr_1.5fr] lg:items-end">
               <div>
                 <Reveal><SectionLabel index={nextIndex()}>Match day</SectionLabel></Reveal>
                 <BlurText text="Numbers that move" highlight="every minute" className="mt-5 text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-5xl" />
@@ -187,7 +187,7 @@ export default async function LandingPage() {
                 <p className="max-w-md text-pretty text-muted-foreground lg:ml-auto">Live from the booking board. Slots go fast once a session opens — these update as players book.</p>
               </Reveal>
             </div>
-            <StaggerGroup className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.1}>
+            <StaggerGroup className="mt-14 grid gap-4 max-sm:mt-8 max-sm:grid-cols-2 max-sm:gap-3 sm:grid-cols-2 lg:grid-cols-4" stagger={0.1}>
               {[
                 { value: openCount, label: "Sessions open", note: "Booking right now" },
                 { value: slotsLeft, label: "Slots left", note: "Across open sessions" },
@@ -195,13 +195,13 @@ export default async function LandingPage() {
                 { value: sessions.length, label: "Upcoming sessions", note: "On the calendar" },
               ].map((stat) => (
                 <StaggerItem key={stat.label}>
-                  <Spotlight className="glass group h-full rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-1">
-                    <p className="label-mono text-muted-foreground">{stat.label}</p>
-                    <p className="mt-10 font-display text-7xl font-semibold tabular-nums">
+                  <Spotlight className="glass group h-full rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-1 max-sm:p-4">
+                    <p className="label-mono text-muted-foreground max-sm:min-h-8 max-sm:text-[0.625rem] max-sm:tracking-[0.1em]">{stat.label}</p>
+                    <p className="mt-10 font-display text-7xl font-semibold tabular-nums max-sm:mt-3 max-sm:text-5xl">
                       <CountUp value={stat.value} />
                     </p>
-                    <p className="mt-3 text-sm text-muted-foreground">{stat.note}</p>
-                    <span aria-hidden="true" className="mt-6 block h-px w-10 bg-gradient-to-r from-primary to-transparent transition-all duration-500 group-hover:w-full" />
+                    <p className="mt-3 text-sm text-muted-foreground max-sm:mt-1 max-sm:text-xs">{stat.note}</p>
+                    <span aria-hidden="true" className="mt-6 max-sm:mt-4 block h-px w-10 bg-gradient-to-r from-primary to-transparent transition-all duration-500 group-hover:w-full" />
                   </Spotlight>
                 </StaggerItem>
               ))}
@@ -212,9 +212,9 @@ export default async function LandingPage() {
 
       {/* -------------------------------------------------------- Sessions */}
       {featured.length > 0 && (
-        <section className="py-24">
+        <section className="py-24 max-sm:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col gap-6 max-sm:gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <Reveal><SectionLabel index={nextIndex()}>Sessions</SectionLabel></Reveal>
                 <BlurText text="Upcoming sessions" className="mt-5 text-4xl font-semibold uppercase sm:text-5xl" />
@@ -225,7 +225,7 @@ export default async function LandingPage() {
                 </ArrowButton>
               </Reveal>
             </div>
-            <StaggerGroup className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" stagger={0.1}>
+            <StaggerGroup className="mt-12 grid gap-6 max-sm:mt-8 max-sm:gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.1}>
               {featured.map((s) => (
                 <StaggerItem key={s.id} className="h-full">
                   <SessionCard session={s} />
@@ -237,31 +237,31 @@ export default async function LandingPage() {
       )}
 
       {/* ---------------------------------------------------- How it works */}
-      <section className="py-24 sm:py-32">
+      <section className="py-24 max-sm:py-16 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <Reveal><SectionLabel index={nextIndex()}>How it works</SectionLabel></Reveal>
             <BlurText text={homepage.howItWorks.title} className="mt-5 text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-5xl" />
-            <Reveal delay={0.1}><p className="mt-5 text-lg text-muted-foreground">{homepage.howItWorks.subtitle}</p></Reveal>
+            <Reveal delay={0.1}><p className="mt-5 text-lg text-muted-foreground max-sm:mt-3 max-sm:text-base">{homepage.howItWorks.subtitle}</p></Reveal>
           </div>
-          <div className="relative mt-16">
+          <div className="relative mt-16 max-sm:mt-8">
             {/* Connector that draws itself across the steps on wide screens. */}
             <Reveal className="absolute inset-x-[8%] top-[3.25rem] hidden h-px origin-left bg-gradient-to-r from-primary/0 via-primary/60 to-primary/0 lg:block" y={0}>
               <span />
             </Reveal>
-            <StaggerGroup className="grid gap-4 lg:grid-cols-3" stagger={0.14}>
+            <StaggerGroup className="grid gap-4 max-sm:gap-3 lg:grid-cols-3" stagger={0.14}>
               {homepage.howItWorks.steps.map((step, i) => (
                 <StaggerItem key={i} className="h-full">
-                  <Spotlight className="glass group relative h-full rounded-2xl p-7 transition-transform duration-500 hover:-translate-y-1">
+                  <Spotlight className="glass group relative h-full rounded-2xl p-7 transition-transform duration-500 hover:-translate-y-1 max-sm:p-5">
                     <div className="flex items-center justify-between">
-                      <div className="relative grid size-14 place-items-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/25 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-4deg]">
+                      <div className="relative grid size-14 max-sm:size-11 place-items-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/25 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[-4deg]">
                         <span aria-hidden="true" className="absolute inset-0 rounded-2xl bg-primary/30 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                         <CmsIcon name={step.icon} className="relative size-6" />
                       </div>
-                      <span className="font-display text-6xl font-semibold text-foreground/10 transition-colors duration-500 group-hover:text-primary/40">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="font-display text-6xl font-semibold text-foreground/10 max-sm:text-5xl transition-colors duration-500 group-hover:text-primary/40">{String(i + 1).padStart(2, "0")}</span>
                     </div>
-                    <h3 className="mt-8 text-2xl font-semibold uppercase">{step.title}</h3>
-                    <p className="mt-2 leading-relaxed text-muted-foreground">{step.description}</p>
+                    <h3 className="mt-8 text-2xl font-semibold uppercase max-sm:mt-4 max-sm:text-xl">{step.title}</h3>
+                    <p className="mt-2 leading-relaxed text-muted-foreground max-sm:mt-1 max-sm:text-sm">{step.description}</p>
                   </Spotlight>
                 </StaggerItem>
               ))}
@@ -272,26 +272,26 @@ export default async function LandingPage() {
 
       {/* -------------------------------------------------------- Services */}
       {services.length > 0 && (
-        <section className="py-24">
+        <section className="py-24 max-sm:py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-end">
+            <div className="grid gap-8 max-sm:gap-4 lg:grid-cols-[1fr_1.2fr] lg:items-end">
               <div>
                 <Reveal><SectionLabel index={nextIndex()}>Services</SectionLabel></Reveal>
                 <BlurText text={content.servicesPage.title} className="mt-5 text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-5xl" />
               </div>
-              <Reveal delay={0.1}><p className="max-w-lg text-pretty text-lg text-muted-foreground lg:ml-auto">{content.servicesPage.subtitle}</p></Reveal>
+              <Reveal delay={0.1}><p className="max-w-lg text-pretty text-lg text-muted-foreground max-sm:text-base lg:ml-auto">{content.servicesPage.subtitle}</p></Reveal>
             </div>
-            <StaggerGroup className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.08}>
+            <StaggerGroup className="mt-14 grid gap-4 max-sm:mt-8 max-sm:gap-3 sm:grid-cols-2 lg:grid-cols-4" stagger={0.08}>
               {services.map((s, i) => (
                 <StaggerItem key={s.id} className="h-full">
-                  <Spotlight className="glass group h-full rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-1">
+                  <Spotlight className="glass group h-full rounded-2xl p-6 transition-transform duration-500 hover:-translate-y-1 max-sm:p-5">
                     <div className="flex items-start justify-between">
                       <span className="grid size-11 place-items-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/20 transition-transform duration-500 group-hover:scale-110">
                         <CmsIcon name={s.icon} className="size-5" />
                       </span>
                       <span className="label-mono text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
                     </div>
-                    <h3 className="mt-8 text-xl font-semibold uppercase">{s.title}</h3>
+                    <h3 className="mt-8 text-xl font-semibold uppercase max-sm:mt-4 max-sm:text-lg">{s.title}</h3>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.description}</p>
                   </Spotlight>
                 </StaggerItem>
@@ -303,7 +303,7 @@ export default async function LandingPage() {
 
       {/* ---------------------------------------------------------- Banner */}
       {banners[0] && (
-        <section className="pb-24">
+        <section className="pb-24 max-sm:pb-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <Reveal y={24} className="glass relative overflow-hidden rounded-3xl">
               {banners[0].imageUrl && (
@@ -312,9 +312,9 @@ export default async function LandingPage() {
                   <img src={banners[0].imageUrl} alt="" className="size-full object-cover opacity-30" />
                 </Parallax>
               )}
-              <div className="relative flex flex-col items-start gap-6 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-12">
+              <div className="relative flex flex-col items-start gap-6 p-8 max-sm:gap-5 max-sm:p-6 sm:flex-row sm:items-center sm:justify-between sm:p-12">
                 <div>
-                  <h3 className="text-4xl font-semibold uppercase">{banners[0].title}</h3>
+                  <h3 className="text-4xl font-semibold uppercase max-sm:text-3xl">{banners[0].title}</h3>
                   {banners[0].subtitle && <p className="mt-2 text-muted-foreground">{banners[0].subtitle}</p>}
                 </div>
                 {banners[0].linkUrl && (
@@ -330,14 +330,14 @@ export default async function LandingPage() {
 
       {/* ------------------------------------------------------------- FAQ */}
       {faqs.length > 0 && (
-        <section className="py-24">
-          <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:px-8">
+        <section className="py-24 max-sm:py-16">
+          <div className="mx-auto grid max-w-7xl gap-12 max-sm:gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_1.6fr] lg:px-8">
             <div>
               <Reveal><SectionLabel index={nextIndex()}>FAQ</SectionLabel></Reveal>
               <BlurText text="Questions," highlight="answered" className="mt-5 text-4xl font-semibold uppercase sm:text-5xl" />
               <Reveal delay={0.1}>
                 <p className="mt-5 text-muted-foreground">Everything you need to know before your first session.</p>
-                <ArrowButton asChild className="mt-8">
+                <ArrowButton asChild className="mt-8 max-sm:mt-6">
                   <Link href="/faq">See all FAQs</Link>
                 </ArrowButton>
               </Reveal>
@@ -348,17 +348,17 @@ export default async function LandingPage() {
       )}
 
       {/* ------------------------------------------------------------- CTA */}
-      <section className="py-24">
+      <section className="py-24 max-sm:pb-12 max-sm:pt-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Reveal y={32} className="glass relative isolate overflow-hidden rounded-[2rem] px-6 py-20 text-center sm:px-12 sm:py-28">
+          <Reveal y={32} className="glass relative isolate overflow-hidden rounded-[2rem] px-6 py-20 text-center max-sm:px-5 max-sm:py-14 sm:px-12 sm:py-28">
             <div aria-hidden="true" className="absolute inset-0 -z-10">
               <div className="animate-glow-breathe absolute -bottom-1/2 left-1/2 h-[120%] w-[80%] -translate-x-1/2 rounded-full bg-primary/40 blur-[100px]" />
               <div className="dot-grid absolute inset-0" />
             </div>
             <SectionLabel className="justify-center">Kick-off</SectionLabel>
             <BlurText text={homepage.cta.title} className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-semibold uppercase leading-[1.02] sm:text-6xl" />
-            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">{homepage.cta.description}</p>
-            <div className="mt-10 flex justify-center">
+            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground max-sm:mt-4 max-sm:text-base">{homepage.cta.description}</p>
+            <div className="mt-10 flex justify-center max-sm:mt-8">
               <Magnetic>
                 <ArrowButton asChild variant="primary">
                   <Link href={closingCta.href}>{closingCta.label}</Link>

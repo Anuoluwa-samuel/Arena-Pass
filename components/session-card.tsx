@@ -39,7 +39,7 @@ export function SessionCard({ session, className }: { session: PublicSession; cl
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="truncate text-2xl font-semibold uppercase leading-tight">{session.title}</h3>
+              <h3 className="truncate text-2xl font-semibold uppercase leading-tight max-sm:text-xl">{session.title}</h3>
               <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="size-3.5 shrink-0" />
                 <span className="truncate">{session.venue}</span>

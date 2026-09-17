@@ -13,7 +13,7 @@ export function FilterTabs({ param = "status", options, className }: { param?: s
   const search = useSearchParams()
   const current = search.get(param) ?? options[0]?.value
   return (
-    <div className={cn("flex flex-wrap gap-1 rounded-lg bg-secondary/60 p-1", className)}>
+    <div className={cn("flex flex-wrap gap-1 rounded-lg bg-secondary/60 p-1 max-sm:no-scrollbar max-sm:flex-nowrap max-sm:overflow-x-auto", className)}>
       {options.map((o) => {
         const params = new URLSearchParams(search.toString())
         if (o.value === options[0].value) params.delete(param)
@@ -21,7 +21,7 @@ export function FilterTabs({ param = "status", options, className }: { param?: s
         params.delete("page")
         const href = params.size ? `${pathname}?${params}` : pathname
         return (
-          <Link key={o.value} href={href} className={cn("rounded-md px-3 py-1.5 text-sm font-medium transition-colors", current === o.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+          <Link key={o.value} href={href} className={cn("rounded-md px-3 py-1.5 text-sm font-medium transition-colors max-sm:shrink-0 max-sm:whitespace-nowrap",current === o.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
             {o.label}
             {o.count !== undefined && <span className="ml-1.5 text-xs text-muted-foreground">{o.count}</span>}
           </Link>

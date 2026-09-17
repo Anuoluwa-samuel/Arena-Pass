@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 export function FilterTabs({ items, active }: { items: Array<{ key: string; label: string; href: string; count: number }>; active: string }) {
   const reduce = useReducedMotionSafe()
   return (
-    <div className="glass inline-flex flex-wrap gap-1 rounded-2xl p-1">
+    <div className="glass inline-flex flex-wrap gap-1 rounded-2xl p-1 max-sm:no-scrollbar max-sm:flex max-sm:max-w-full max-sm:flex-nowrap max-sm:overflow-x-auto">
       {items.map((item) => {
         const isActive = item.key === active
         return (
@@ -17,7 +17,7 @@ export function FilterTabs({ items, active }: { items: Array<{ key: string; labe
             key={item.key}
             href={item.href}
             aria-current={isActive ? "page" : undefined}
-            className={cn("relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300", isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            className={cn("relative inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300 max-sm:shrink-0 max-sm:gap-1.5 max-sm:whitespace-nowrap max-sm:px-3", isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
           >
             {isActive &&
               (reduce ? (

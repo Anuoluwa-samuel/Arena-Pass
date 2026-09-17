@@ -12,7 +12,7 @@ export interface TeamGridTeam {
  */
 export function TeamGrid({ teams, highlight, onSelect, selected, compact }: { teams: TeamGridTeam[]; highlight?: number | null; onSelect?: (teamNumber: number) => void; selected?: number | null; compact?: boolean }) {
   return (
-    <div className={cn("grid gap-3", compact ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4")}>
+    <div className={cn("grid gap-3", compact ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4", "max-sm:gap-2")}>
       {teams.map((team) => {
         const free = team.slots.filter((s) => !s.taken).length
         const isFull = free === 0
@@ -26,24 +26,24 @@ export function TeamGrid({ teams, highlight, onSelect, selected, compact }: { te
             onClick={interactive ? () => onSelect?.(team.teamNumber) : undefined}
             aria-pressed={interactive ? isSelected : undefined}
             className={cn(
-              "rounded-xl border bg-card p-3 text-left transition-colors",
+              "rounded-xl border bg-card p-3 text-left transition-colors max-sm:min-w-0 max-sm:p-2.5",
               isFull ? "border-border/60 opacity-60" : "border-border",
               interactive && "hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               isSelected && "border-primary ring-1 ring-primary",
               highlight === team.teamNumber && "border-primary"
             )}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">{team.name}</span>
-              <span className={cn("text-xs", isFull ? "text-destructive" : "text-muted-foreground")}>{isFull ? "Full" : `${free} open`}</span>
+            <div className="flex items-center justify-between max-sm:gap-1.5">
+              <span className="text-sm font-semibold max-sm:truncate">{team.name}</span>
+              <span className={cn("text-xs max-sm:shrink-0 max-sm:text-[11px]", isFull ? "text-destructive" : "text-muted-foreground")}>{isFull ? "Full" : `${free} open`}</span>
             </div>
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <div className="mt-2.5 flex flex-wrap gap-1.5 max-sm:mt-2 max-sm:gap-1">
               {team.slots.map((slot) => (
                 <span
                   key={slot.slotNumber}
                   title={slot.label ?? (slot.taken ? "Taken" : "Available")}
                   className={cn(
-                    "flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-medium",
+                    "flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-medium max-sm:h-6 max-sm:min-w-6 max-sm:px-1",
                     slot.taken ? "bg-primary/20 text-primary" : "border border-dashed border-border text-muted-foreground"
                   )}
                 >
