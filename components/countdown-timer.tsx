@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useHydrated } from "@/hooks/use-mobile"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { useHydrated, useReducedMotionSafe } from "@/hooks/use-mobile"
+import { AnimatePresence, motion } from "motion/react"
 import { cn } from "@/lib/utils"
 import { EASE_OUT } from "@/lib/motion"
 
@@ -167,7 +167,7 @@ function TimeUnit({
 }
 
 function FlipNumber({ value }: { value: number }) {
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
   const digits = value.toString().padStart(2, "0").split("")
 
   if (reduce) {

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
+import { useReducedMotionSafe } from "@/hooks/use-mobile"
 import { ChevronDown } from "lucide-react"
 import { DURATION } from "@/lib/motion"
 
@@ -12,7 +13,7 @@ import { DURATION } from "@/lib/motion"
  */
 export function ScrollCue() {
   const [visible, setVisible] = useState(true)
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY < 40)

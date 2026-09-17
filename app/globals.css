@@ -8,8 +8,10 @@
    Dark:  floodlit pitch — near-black surfaces, one vivid green.
    Light is the fallback when no class is set; `.dark` is applied by next-themes. */
 :root {
-  --background: oklch(0.985 0.005 155);
-  --foreground: oklch(0.22 0.02 260);
+  /* Morning pitch: sage-stone ground (not white) and deep ink, so glass cards
+     read as lighter panels with real depth instead of white on white. */
+  --background: oklch(0.925 0.02 165);
+  --foreground: oklch(0.19 0.03 200);
   /* Surfaces are glass. `*-solid` holds the opaque colour (fallback when
      backdrop-filter is unsupported); the public token is a translucent tint of
      it. Anything painting bg-card / bg-sidebar / bg-popover gets the blur from
@@ -18,55 +20,76 @@
   --glass-blur: 10px;
   --card-solid: oklch(1 0 0);
   --card: color-mix(in oklch, var(--card-solid) var(--glass-tint), transparent);
-  --card-foreground: oklch(0.22 0.02 260);
+  --card-foreground: oklch(0.19 0.03 200);
   /* Floating layers (menus, dialogs, tooltips) cover other content, so they frost harder. */
-  --popover-solid: oklch(1 0 0);
+  --popover-solid: oklch(0.975 0.01 165);
   --popover: color-mix(in oklch, var(--popover-solid) 80%, transparent);
-  --popover-foreground: oklch(0.22 0.02 260);
+  --popover-foreground: oklch(0.19 0.03 200);
   /* Deeper than the dark-theme green: L 0.72 cannot carry white text or pass
      4.5:1 as text on white, so light drops to L 0.54 and keeps the same hue. */
-  --primary: oklch(0.54 0.15 150);
+  --primary: oklch(0.47 0.14 150);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.008 155);
-  --secondary-foreground: oklch(0.26 0.02 260);
-  --muted: oklch(0.96 0.008 155);
+  /* Status text on tinted chips over nearly clear glass needs more depth than the
+     fill colour, so each tone has its own text token (dark reuses the fills). */
+  --success-text: oklch(0.42 0.13 150);
+  --danger-text: oklch(0.45 0.18 27);
+  --warning-text: oklch(0.47 0.12 70);
+  --info-text: oklch(0.45 0.12 240);
+  --secondary: oklch(0.89 0.022 165);
+  --secondary-foreground: oklch(0.22 0.03 200);
+  --muted: oklch(0.89 0.022 165);
   /* 0.44 (was 0.47): keeps ≥ 4.5:1 over the brightest gradient blob seen through 10% glass. */
-  --muted-foreground: oklch(0.44 0.02 260);
-  --accent: oklch(0.54 0.15 150);
+  --muted-foreground: oklch(0.4 0.025 200);
+  --accent: oklch(0.47 0.14 150);
   --accent-foreground: oklch(0.99 0 0);
   --destructive: oklch(0.52 0.21 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.9 0.008 250);
-  --input: oklch(0.93 0.006 250);
-  --ring: oklch(0.54 0.15 150);
-  --chart-1: oklch(0.54 0.15 150);
+  --border: oklch(0.8 0.025 170);
+  --input: oklch(0.87 0.02 170);
+  --ring: oklch(0.47 0.14 150);
+  --chart-1: oklch(0.47 0.14 150);
   --chart-2: oklch(0.63 0.14 150);
   --chart-3: oklch(0.71 0.12 150);
   --chart-4: oklch(0.46 0.13 150);
   --chart-5: oklch(0.79 0.09 150);
   --radius: 0.75rem;
-  --sidebar-solid: oklch(0.975 0.008 155);
+  --sidebar-solid: oklch(0.95 0.015 165);
   --sidebar: color-mix(in oklch, var(--sidebar-solid) var(--glass-tint), transparent);
-  --sidebar-foreground: oklch(0.22 0.02 260);
-  --sidebar-primary: oklch(0.54 0.15 150);
+  --sidebar-foreground: oklch(0.19 0.03 200);
+  --sidebar-primary: oklch(0.47 0.14 150);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.01 155);
-  --sidebar-accent-foreground: oklch(0.24 0.02 260);
-  --sidebar-border: oklch(0.9 0.008 250);
-  --sidebar-ring: oklch(0.54 0.15 150);
-  --success: oklch(0.54 0.15 150);
+  --sidebar-accent: oklch(0.88 0.03 160);
+  --sidebar-accent-foreground: oklch(0.2 0.03 200);
+  --sidebar-border: oklch(0.8 0.025 170);
+  --sidebar-ring: oklch(0.47 0.14 150);
+  --success: oklch(0.47 0.14 150);
   --warning: oklch(0.62 0.14 70);
 
   /* Ambient page background. One token, two themes — the body rule never changes. */
   /* Aurora: emerald, teal, lime and mint blobs over a pale mint wash. Blobs stay
      at L ≥ 0.93 so body and muted text keep their contrast through clear glass. */
   --gradient-page:
-    radial-gradient(60% 50% at 8% 0%, oklch(0.93 0.06 155 / 0.95), transparent 70%),
-    radial-gradient(50% 45% at 96% 12%, oklch(0.94 0.05 195 / 0.9), transparent 70%),
-    radial-gradient(55% 50% at 82% 96%, oklch(0.95 0.06 125 / 0.85), transparent 70%),
-    radial-gradient(45% 40% at 4% 88%, oklch(0.94 0.045 175 / 0.8), transparent 70%),
-    radial-gradient(35% 30% at 50% 50%, oklch(0.96 0.03 165 / 0.6), transparent 70%),
-    linear-gradient(160deg, oklch(0.985 0.012 160) 0%, oklch(0.965 0.02 170) 100%);
+    radial-gradient(60% 55% at 6% 0%, oklch(0.87 0.09 155 / 0.95), transparent 70%),
+    radial-gradient(55% 50% at 98% 8%, oklch(0.88 0.07 195 / 0.9), transparent 70%),
+    radial-gradient(60% 55% at 85% 100%, oklch(0.89 0.09 130 / 0.9), transparent 70%),
+    radial-gradient(50% 45% at 0% 92%, oklch(0.88 0.07 175 / 0.85), transparent 70%),
+    linear-gradient(160deg, oklch(0.93 0.02 165) 0%, oklch(0.9 0.03 175) 100%);
+
+  /* Floodlight backdrop (components/site/floodlight-backdrop.tsx). Light mode is
+     daylight: soft emerald/teal beams at low strength so text keeps contrast. */
+  /* Beams stay at L >= 0.84 so muted text (L 0.4) keeps >= 4.5:1 through clear glass;
+     colour comes from chroma, not darkness. */
+  --streak-core: oklch(0.85 0.15 150);
+  --streak-edge: oklch(0.87 0.1 190);
+  --streak-glow: oklch(0.86 0.12 135);
+  --streak-opacity: 0.8;
+  --dot-color: color-mix(in oklch, var(--foreground) 16%, transparent);
+  /* Headline shimmer highlight. Light keeps it dark enough (>= 4.5:1 on white)
+     that the sweep never washes letters out. */
+  --shimmer: oklch(0.62 0.18 145);
+  /* Signature arrow tile: ink on light, white on dark. */
+  --tile-bg: oklch(0.19 0.03 200);
+  --tile-fg: oklch(0.99 0 0);
 
   /* Hero pitch markings: colour and strength are themed, the geometry is not. */
   --pitch-line: color-mix(in oklch, var(--primary) 85%, transparent);
@@ -74,25 +97,41 @@
 
   /* Recharts takes plain colour strings, so chart marks need their own tokens
      rather than Tailwind classes. Contrast-tuned per theme. */
-  --chart-mark: oklch(0.54 0.15 150);
-  --chart-grid: oklch(0.91 0.008 250);
-  --chart-axis: oklch(0.47 0.02 260);
-  --chart-cursor: oklch(0.95 0.008 155);
+  --chart-mark: oklch(0.47 0.14 150);
+  --chart-grid: oklch(0.82 0.02 170);
+  --chart-axis: oklch(0.4 0.025 200);
+  --chart-cursor: oklch(0.88 0.03 160);
 
   /* Glass surface (see .glass / .glass-bar below). Light glass needs a visible
      edge: a white rim disappears on a whitish page, so the border is a real
      neutral and the top highlight does the "glass" work. */
   --glass-bg: var(--card);
   /* Sticky bars sit over scrolling text, so they carry more tint than panels. */
-  --glass-bar-bg: color-mix(in oklch, var(--background) 30%, transparent);
-  --glass-border: color-mix(in oklch, var(--border) 85%, transparent);
-  --glass-highlight: oklch(1 0 0 / 0.75);
-  --glass-shadow: 0 10px 30px -12px oklch(0.35 0.04 160 / 0.18);
+  --glass-bar-bg: color-mix(in oklch, var(--background) 45%, transparent);
+  --glass-border: oklch(1 0 0 / 0.55);
+  --glass-highlight: oklch(1 0 0 / 0.8);
+  --glass-shadow: 0 16px 40px -18px oklch(0.28 0.06 170 / 0.35), 0 0 0 1px oklch(0.3 0.03 170 / 0.06);
   --glass-fallback: var(--card-solid);
 }
 
 .dark {
-  --background: oklch(0.12 0.01 260);
+  /* Stadium night: near-black with a cool cast, so green floodlights glow. */
+  --background: oklch(0.1 0.012 255);
+  /* Beam brightness is the contrast budget: glass is ~10% tint, so text sits
+     almost directly on the beams. Core L 0.5 at 0.65 opacity keeps muted text
+     (L 0.72) >= 4.5:1 where a beam crosses it, and still glows against L 0.1. */
+  --streak-core: oklch(0.5 0.16 148);
+  --streak-edge: oklch(0.4 0.09 190);
+  --streak-glow: oklch(0.38 0.12 150);
+  --streak-opacity: 0.65;
+  --success-text: oklch(0.8 0.18 145);
+  --danger-text: oklch(0.72 0.17 27);
+  --warning-text: var(--warning);
+  --info-text: oklch(0.8 0.1 230);
+  --dot-color: oklch(1 0 0 / 0.07);
+  --shimmer: oklch(0.88 0.17 140);
+  --tile-bg: oklch(0.98 0 0);
+  --tile-fg: oklch(0.12 0.01 260);
   --foreground: oklch(0.98 0 0);
   --card-solid: oklch(0.16 0.01 260);
   --card: color-mix(in oklch, var(--card-solid) var(--glass-tint), transparent);
@@ -105,7 +144,7 @@
   --secondary: oklch(0.22 0.01 260);
   --secondary-foreground: oklch(0.98 0 0);
   --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0 0);
+  --muted-foreground: oklch(0.75 0 0);
   --accent: oklch(0.72 0.19 145);
   --accent-foreground: oklch(0.12 0.01 260);
   --destructive: oklch(0.55 0.22 27);
@@ -157,8 +196,9 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow), 'Arial Narrow', ui-sans-serif, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, 'SFMono-Regular', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -202,6 +242,12 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  /* Every heading uses the condensed display face; weight and size stay per heading. */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.005em;
   }
   body {
     @apply bg-background text-foreground;
@@ -331,3 +377,120 @@
   .print-hidden { display: none !important; }
   .print-ticket { box-shadow: none !important; border: 1px solid #ddd !important; background: white !important; color: black !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Arena Pass "come alive" layer. Everything below is decoration or motion;
+   the global reduced-motion rule above collapses every animation here.
+   ------------------------------------------------------------------------- */
+
+/* Floodlight beams: long blurred gradient ribbons that drift and breathe. */
+@keyframes streak-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--streak-rotate)); opacity: calc(var(--streak-opacity) * 0.85); }
+  50% { transform: translate3d(3%, -2.5%, 0) rotate(calc(var(--streak-rotate) + 2deg)); opacity: var(--streak-opacity); }
+}
+@keyframes streak-drift-alt {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--streak-rotate)); opacity: calc(var(--streak-opacity) * 0.6); }
+  50% { transform: translate3d(-4%, 3%, 0) rotate(calc(var(--streak-rotate) - 3deg)); opacity: calc(var(--streak-opacity) * 0.9); }
+}
+@keyframes glow-breathe {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: calc(var(--streak-opacity) * 0.55); }
+  50% { transform: translate3d(-2%, 2%, 0) scale(1.12); opacity: calc(var(--streak-opacity) * 0.8); }
+}
+.streak {
+  position: absolute;
+  border-radius: 9999px;
+  /* Resting state = the first keyframe, so beams keep their angle and strength
+     when reduced motion stops the animation. */
+  transform: rotate(var(--streak-rotate));
+  opacity: calc(var(--streak-opacity) * 0.85);
+  will-change: transform, opacity;
+  background: linear-gradient(90deg, transparent 0%, var(--streak-edge) 22%, var(--streak-core) 52%, var(--streak-edge) 78%, transparent 100%);
+}
+.animate-streak { animation: streak-drift 18s ease-in-out infinite; }
+.animate-streak-alt { animation: streak-drift-alt 24s ease-in-out infinite; }
+.animate-glow-breathe { opacity: calc(var(--streak-opacity) * 0.55); animation: glow-breathe 14s ease-in-out infinite; }
+.animate-streak-alt { opacity: calc(var(--streak-opacity) * 0.6); }
+
+/* Faint dot grid, faded out towards the edges. */
+@utility dot-grid {
+  background-image: radial-gradient(circle at center, var(--dot-color) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 75%);
+}
+
+/* Uppercase mono label: "02 /SESSIONS". */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Headline highlight: brand gradient with a slow light sweep. */
+@keyframes text-shimmer {
+  0% { background-position: 200% 50%; }
+  100% { background-position: -200% 50%; }
+}
+@utility text-gradient-primary {
+  background-image: linear-gradient(100deg, var(--primary) 0%, var(--primary) 35%, var(--shimmer) 50%, var(--primary) 65%, var(--primary) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-shimmer 7s linear infinite;
+}
+
+/* Giant footer wordmark: solid top fading into the page. */
+@utility text-wordmark {
+  background-image: linear-gradient(180deg, color-mix(in oklch, var(--foreground) 92%, transparent) 0%, color-mix(in oklch, var(--foreground) 40%, transparent) 55%, transparent 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Light sweep across a button on hover. Needs `relative overflow-hidden`. */
+@utility sheen {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, oklch(1 0 0 / 0.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  &:hover::after { transform: translateX(120%); }
+}
+
+/* Notched corner (bottom-right), the signature arrow tile shape. */
+@utility notch {
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 68% 100%, 0 100%);
+}
+
+/* Pointer-following glow for cards. components/spotlight.tsx sets --mx/--my. */
+@utility spotlight {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), color-mix(in oklch, var(--primary) 16%, transparent), transparent 60%);
+  }
+  &:hover::before { opacity: 1; }
+}
+
+/* Endless horizontal ticker. The track holds the content twice. */
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.animate-marquee { animation: marquee var(--marquee-duration, 40s) linear infinite; }
+.marquee-mask { mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); }
+.group\/marquee:hover .animate-marquee { animation-play-state: paused; }

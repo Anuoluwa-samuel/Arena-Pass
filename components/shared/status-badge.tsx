@@ -6,10 +6,10 @@ import type { SessionStatus, TicketStatus, PaymentStatus, BookingStatus } from "
 type Tone = "success" | "warning" | "danger" | "neutral" | "info" | "muted"
 
 const TONE_CLASS: Record<Tone, string> = {
-  success: "border-transparent bg-primary/15 text-primary",
-  warning: "border-transparent bg-warning/15 text-warning",
-  danger: "border-transparent bg-destructive/15 text-destructive",
-  info: "border-transparent bg-sky-400/15 text-sky-300",
+  success: "border-transparent bg-primary/15 text-[var(--success-text)]",
+  warning: "border-transparent bg-warning/15 text-[var(--warning-text)]",
+  danger: "border-transparent bg-destructive/15 text-[var(--danger-text)]",
+  info: "border-transparent bg-sky-500/15 text-[var(--info-text)]",
   neutral: "border-transparent bg-secondary text-secondary-foreground",
   muted: "border-border bg-transparent text-muted-foreground",
 }

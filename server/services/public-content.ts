@@ -36,6 +36,13 @@ export async function getPublicSiteContent() {
 
 export type PublicSiteContent = Awaited<ReturnType<typeof getPublicSiteContent>>
 
+/** Every session on the public site. The homepage stats and the Sessions page both count from this, so they always agree. */
+export async function getPublicSessions() {
+  const arena = await getDefaultArena()
+  const result = await listSessions({ arenaId: arena.id, publicOnly: true, pageSize: 100 })
+  return result.items.map(toPublicSession)
+}
+
 export async function getFeaturedSessions(limit: number) {
   const arena = await getDefaultArena()
   const result = await listSessions({ arenaId: arena.id, publicOnly: true, pageSize: limit })

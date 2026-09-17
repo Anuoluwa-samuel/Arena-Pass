@@ -31,3 +31,13 @@ export function useHydrated() {
     () => false
   )
 }
+
+/**
+ * Reduced-motion preference that is safe to branch markup on. It reports
+ * `false` for the server render and the hydration pass, then the real value,
+ * so animated and static trees never mismatch. (motion's useReducedMotion reads
+ * the preference during hydration, which makes React discard the server HTML.)
+ */
+export function useReducedMotionSafe() {
+  return useMediaQuery("(prefers-reduced-motion: reduce)")
+}

@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Barlow_Condensed, DM_Mono, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+// Barlow Condensed is the stadium-board display face for headlines; Manrope is
+// the readable body; DM Mono is the uppercase "/LABEL" voice and ticket numbers.
+const display = Barlow_Condensed({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-barlow', display: 'swap' })
+const sans = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap' })
+const mono = DM_Mono({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-dm-mono', display: 'swap' })
 
 export const metadata: Metadata = {
   title: { default: 'Arena Pass — Football Session Tickets', template: '%s · Arena Pass' },
@@ -39,7 +42,7 @@ export default function RootLayout({
   return (
     // suppressHydrationWarning: next-themes writes the theme class onto <html>
     // from an inline script before hydration, so the server markup won't match.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"

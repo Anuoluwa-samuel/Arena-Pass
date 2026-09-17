@@ -3,7 +3,8 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { AnimatePresence, motion, useReducedMotion, type Transition } from "motion/react"
+import { AnimatePresence, motion, type Transition } from "motion/react"
+import { useReducedMotionSafe } from "@/hooks/use-mobile"
 import { CalendarDays, ChevronsLeft, CircleHelp, LogOut, Mail, Menu, Ticket } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -32,7 +33,7 @@ interface Customer {
 }
 
 function useSpring(): Transition {
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
   return reduce ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 36, mass: 0.8 }
 }
 
@@ -60,7 +61,7 @@ interface RowProps {
 
 /** One sidebar entry — a link or a button — with the sliding active pill and a tooltip when collapsed. */
 function SidebarRow({ label, icon: RowIcon, collapsed, href, active = false, tone = "default", indicatorId, onClick }: RowProps) {
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
   const spring = useSpring()
   const className = cn(
     "group relative isolate flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
@@ -161,7 +162,7 @@ interface BodyProps {
 /** Logo, links and account area — shared by the desktop sidebar and the mobile drawer. */
 function SidebarBody({ customer, siteName, collapsed, indicatorId, stagger = false, onNavigate, onSignOut, collapseControl }: BodyProps) {
   const pathname = usePathname()
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
   const cascade = stagger && !reduce
 
@@ -231,7 +232,7 @@ export function CustomerShell({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const reduce = useReducedMotion()
+  const reduce = useReducedMotionSafe()
   const spring = useSpring()
   const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [drawerOpen, setDrawerOpen] = useState(false)
