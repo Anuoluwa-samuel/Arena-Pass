@@ -222,7 +222,7 @@ describe("refunds", () => {
     const { payment, ticket } = await bookAndPay(session.id, 900)
     const admin = await getAdminUser(ctx.db)
     const result = await refundPayment(payment.id, "Customer request", { actor: { ...testActor, id: admin.id } })
-    expect(result.ticket.status).toBe("REFUNDED")
+    expect(result.ticket?.status).toBe("REFUNDED")
     expect(result.payment.status).toBe("REFUNDED")
     const s = (await ctx.db.query.sessions.findFirst({ where: eq(schema.sessions.id, session.id) }))!
     expect(s.bookedCount).toBe(0)

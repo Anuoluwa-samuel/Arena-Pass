@@ -32,7 +32,8 @@ export interface VerifyResult {
 
 export interface WebhookEvent {
   type: string
-  reference: string
+  /** Transaction reference for charge events; absent for events we don't act on (refunds, transfers…). */
+  reference?: string
   raw: unknown
 }
 
@@ -46,7 +47,7 @@ export interface PaymentProvider {
   readonly name: string
   initialize(params: InitializeParams): Promise<InitializeResult>
   verify(reference: string): Promise<VerifyResult>
-  /** Returns null when the signature is invalid. */
+  /** Returns null only when the signature is missing or invalid; a valid event we don't use still returns an event. */
   parseWebhook(rawBody: string, headers: Headers): Promise<WebhookEvent | null>
   refund(params: { providerTransactionId: string; amount: number; reason: string }): Promise<RefundResult>
 }

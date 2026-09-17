@@ -23,8 +23,8 @@ Mutations from the browser are cookie-authenticated and must be same-origin (Ori
 | GET | `/api/bookings/:id` | Booking state (email masked) |
 | POST | `/api/bookings/:id/cancel` | Release a pending hold |
 | POST | `/api/payments/initialize` | `{ bookingId }` → new/reused authorization URL |
-| GET | `/api/payments/verify?reference=` | Server-side verification; `PAID` returns `ticketNumber` + `accessKey` |
-| POST | `/api/payments/webhook` | Provider webhook; signature verified by the adapter |
+| GET | `/api/payments/verify?reference=` | Server-side verification; `PAID` returns `ticketNumber` + `accessKey`. `REFUND_REQUIRED` means the charge succeeded after the hold expired and the session filled: no ticket, admins alerted (email + in-app + dashboard banner), refunded from Payments → Needs refund |
+| POST | `/api/payments/webhook` | Provider webhook; signature verified by the adapter. Charge events are re-verified with the provider; other validly signed events (refunds, transfers) get 200 so the provider stops retrying |
 | POST | `/api/payments/mock/complete` | Dev only (`PAYMENT_PROVIDER=mock`) |
 | GET | `/api/tickets/:ticketNumber?k=` | Ticket + QR image. Owner, staff, or signed access key |
 | GET | `/api/cms/public` | Published content bundle for the site |

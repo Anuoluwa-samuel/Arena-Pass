@@ -72,9 +72,15 @@ export class PaystackProvider implements PaymentProvider {
     const a = Buffer.from(signature)
     const b = Buffer.from(expected)
     if (a.length !== b.length || !timingSafeEqual(a, b)) return null
-    const event = JSON.parse(rawBody) as { event: string; data?: { reference?: string } }
-    if (!event?.data?.reference) return null
-    return { type: event.event, reference: event.data.reference, raw: event }
+    let event: { event?: string; data?: { reference?: string } }
+    try {
+      event = JSON.parse(rawBody)
+    } catch {
+      return null
+    }
+    // Only charge events carry a transaction reference we verify; everything else is acknowledged and ignored.
+    const reference = event.event?.startsWith("charge.") ? event.data?.reference : undefined
+    return { type: event.event ?? "unknown", reference, raw: event }
   }
 
   async refund(params: { providerTransactionId: string; amount: number; reason: string }) {

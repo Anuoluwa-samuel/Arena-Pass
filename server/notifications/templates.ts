@@ -58,14 +58,14 @@ export function sessionCancelledEmail(p: { appName: string; customerName: string
   return { subject, html, text: `Hi ${p.customerName}, ${p.sessionTitle} on ${formatDate(p.startsAt)} has been cancelled. Reason: ${p.reason}. Your payment will be refunded.` }
 }
 
-export function refundEmail(p: { appName: string; customerName: string; ticketNumber: string; amount: number; currency: string }) {
-  const subject = `Refund issued for ${p.ticketNumber}`
+export function refundEmail(p: { appName: string; customerName: string; /** e.g. "ticket AP-2026-000123" or "payment PAY-…" */ itemLabel: string; amount: number; currency: string }) {
+  const subject = `Refund issued for your ${p.itemLabel}`
   const html = layout(
     "Refund issued",
-    `<p style="color:#b5bac4">Hi ${p.customerName}, we have refunded ${formatMoney(p.amount, p.currency)} for ticket ${p.ticketNumber}. It can take a few business days to appear on your statement.</p>`,
+    `<p style="color:#b5bac4">Hi ${p.customerName}, we have refunded ${formatMoney(p.amount, p.currency)} for your ${p.itemLabel}. It can take a few business days to appear on your statement.</p>`,
     p.appName
   )
-  return { subject, html, text: `Hi ${p.customerName}, we have refunded ${formatMoney(p.amount, p.currency)} for ticket ${p.ticketNumber}.` }
+  return { subject, html, text: `Hi ${p.customerName}, we have refunded ${formatMoney(p.amount, p.currency)} for your ${p.itemLabel}.` }
 }
 
 export function sessionReminderEmail(p: { appName: string; customerName: string; sessionTitle: string; startsAt: Date; endsAt: Date; venue: string; ticketUrl: string }) {
@@ -90,5 +90,23 @@ export function passwordResetEmail(p: { appName: string; customerName: string; r
     `You are receiving this because a password reset was requested for your ${p.appName} account.`
   )
   const text = `Hi ${p.customerName},\n\nReset your ${p.appName} password: ${p.resetUrl}\n\nThis link expires in ${p.expiresInMinutes} minutes and can only be used once. If you didn't ask for this, ignore this email.\n`
+  return { subject, html, text }
+}
+
+export function refundRequiredAdminEmail(p: { appName: string; customerName: string; customerEmail: string; sessionTitle: string; reference: string; amount: number; currency: string; paymentsUrl: string }) {
+  const subject = `Action needed: refund ${formatMoney(p.amount, p.currency)} to ${p.customerName}`
+  const html = layout(
+    "Refund needed",
+    `<p style="color:#b5bac4;margin:0 0 16px">A customer paid after their slot reservation expired, and <strong>${escapeHtml(p.sessionTitle)}</strong> filled up in the meantime, so no ticket was issued. The money has been received and must be refunded.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <tr><td style="padding:6px 0;color:#8b919c">Customer</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.customerName)} · ${escapeHtml(p.customerEmail)}</td></tr>
+      <tr><td style="padding:6px 0;color:#8b919c">Amount</td><td style="padding:6px 0;text-align:right;font-weight:600">${formatMoney(p.amount, p.currency)}</td></tr>
+      <tr><td style="padding:6px 0;color:#8b919c">Reference</td><td style="padding:6px 0;text-align:right">${escapeHtml(p.reference)}</td></tr>
+    </table>
+    <a href="${p.paymentsUrl}" style="display:block;margin-top:24px;background:#22c55e;color:#0f1115;text-decoration:none;text-align:center;padding:14px;border-radius:10px;font-weight:600">Review and refund</a>`,
+    p.appName,
+    `You are receiving this because you can issue refunds for ${p.appName}.`
+  )
+  const text = `Refund needed: ${p.customerName} (${p.customerEmail}) paid ${formatMoney(p.amount, p.currency)} for ${p.sessionTitle} after their reservation expired, and the session is full. No ticket was issued. Reference ${p.reference}. Review and refund: ${p.paymentsUrl}\n`
   return { subject, html, text }
 }
