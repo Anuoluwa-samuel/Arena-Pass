@@ -1,6 +1,7 @@
 import "server-only"
 import { env } from "@/server/env"
 import { LocalStorageAdapter } from "./local"
+import { BlobStorageAdapter } from "./blob"
 
 /**
  * Object storage abstraction. Local disk for development and single-server
@@ -18,6 +19,6 @@ export interface StorageAdapter {
 let cached: StorageAdapter | undefined
 export function getStorage(): StorageAdapter {
   if (cached) return cached
-  cached = new LocalStorageAdapter(env.UPLOAD_DIR, "/api/media/files")
+  cached = env.STORAGE_DRIVER === "blob" ? new BlobStorageAdapter(env.BLOB_READ_WRITE_TOKEN!) : new LocalStorageAdapter(env.UPLOAD_DIR, "/api/media/files")
   return cached
 }

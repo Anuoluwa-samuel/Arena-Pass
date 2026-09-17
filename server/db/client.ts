@@ -34,7 +34,9 @@ async function createDatabase(): Promise<Database> {
     const pool = new Pool({
       connectionString: env.DATABASE_URL,
       max: 10,
-      ssl: env.DATABASE_URL.includes("sslmode=require") ? { rejectUnauthorized: false } : undefined,
+      // Verify the server certificate (managed hosts like Neon have valid ones); a
+      // non-verifying connection could be intercepted. Opt out only for self-signed dev servers.
+      ssl: env.DATABASE_URL.includes("sslmode=require") ? { rejectUnauthorized: process.env.DATABASE_SSL_NO_VERIFY !== "1" } : undefined,
     })
     logger.info("db.connect", { driver: "postgres" })
     return drizzlePg(pool, { schema }) as unknown as Database
