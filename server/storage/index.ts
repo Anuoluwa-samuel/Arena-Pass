@@ -19,6 +19,6 @@ export interface StorageAdapter {
 let cached: StorageAdapter | undefined
 export function getStorage(): StorageAdapter {
   if (cached) return cached
-  cached = env.STORAGE_DRIVER === "blob" ? new BlobStorageAdapter(env.BLOB_READ_WRITE_TOKEN!) : new LocalStorageAdapter(env.UPLOAD_DIR, "/api/media/files")
+  cached = env.STORAGE_DRIVER === "blob" ? new BlobStorageAdapter(env.BLOB_READ_WRITE_TOKEN) : new LocalStorageAdapter(env.UPLOAD_DIR, "/api/media/files")
   return cached
 }

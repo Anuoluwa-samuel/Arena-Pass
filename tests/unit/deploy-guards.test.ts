@@ -32,6 +32,15 @@ describe("BlobStorageAdapter", () => {
     expect(del).toHaveBeenCalledWith("content/f1.jpg", { token: "vercel_blob_rw_test" })
     expect(adapter.localPath()).toBeNull()
   })
+
+  it("passes no token when none is configured, so the SDK can use Vercel's OIDC credentials", async () => {
+    put.mockResolvedValue({ url: "https://abc123.public.blob.vercel-storage.com/content/f2.png" })
+    const adapter = new BlobStorageAdapter(undefined)
+    await adapter.put("content/f2.png", Buffer.from([0x89, 0x50]), "image/png")
+    expect(put.mock.calls[0][2]).not.toHaveProperty("token")
+    await adapter.delete("content/f2.png")
+    expect(del).toHaveBeenCalledWith("content/f2.png", undefined)
+  })
 })
 
 describe("first production admin", () => {

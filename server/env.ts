@@ -28,6 +28,8 @@ const schema = z.object({
   // Media storage
   // local: disk (development, single server). blob: Vercel Blob (serverless hosts have no persistent disk).
   STORAGE_DRIVER: z.enum(["local", "blob"]).default("local"),
+  // Vercel connects stores with OIDC (BLOB_STORE_ID + rotating token); a static read-write token is the fallback elsewhere.
+  BLOB_STORE_ID: z.string().optional(),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
   UPLOAD_DIR: z.string().default("./storage/uploads"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
@@ -94,8 +96,8 @@ if (onVercel && !isBuildPhase && !env.DATABASE_URL) {
 if (onVercel && !isBuildPhase && env.STORAGE_DRIVER !== "blob") {
   throw new Error("STORAGE_DRIVER=blob is required on Vercel (local uploads would be lost). Add a Blob store via Vercel Storage.")
 }
-if (env.STORAGE_DRIVER === "blob" && !env.BLOB_READ_WRITE_TOKEN && !isBuildPhase) {
-  throw new Error("BLOB_READ_WRITE_TOKEN is required when STORAGE_DRIVER=blob")
+if (env.STORAGE_DRIVER === "blob" && !env.BLOB_STORE_ID && !env.BLOB_READ_WRITE_TOKEN && !isBuildPhase) {
+  throw new Error("STORAGE_DRIVER=blob needs Blob credentials: connect a Blob store to this project in Vercel (sets BLOB_STORE_ID), or set BLOB_READ_WRITE_TOKEN")
 }
 if (env.PAYMENT_PROVIDER === "paystack" && !env.PAYSTACK_SECRET_KEY) {
   throw new Error("PAYSTACK_SECRET_KEY is required when PAYMENT_PROVIDER=paystack")

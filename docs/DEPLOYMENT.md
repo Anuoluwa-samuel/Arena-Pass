@@ -48,7 +48,7 @@ The app refuses to start on Vercel without a real database and Blob storage (ser
 
 1. **Import the repo** in Vercel (production branch `main`). `vercel.json` pins functions to `lhr1` (London, closest to Lagos), uses `npm run vercel-build`, and schedules the daily cron.
 2. **Storage → Create → Neon (Postgres)**, region **London (aws-eu-west-2)**, connected to Production. It sets `DATABASE_URL` (use the pooled URL).
-3. **Storage → Create → Blob**, a **public** store. It sets `BLOB_READ_WRITE_TOKEN`. Add `STORAGE_DRIVER=blob`.
+3. **Storage → Create → Blob**, a **public** store, connected to Production. Vercel authenticates it with OIDC and sets `BLOB_STORE_ID` (no static token needed). Add `STORAGE_DRIVER=blob`.
 4. **Environment variables (Production):** `APP_URL=https://<project>.vercel.app`, `SESSION_SECRET`, `QR_SECRET`, `CRON_SECRET`, `PAYMENT_PROVIDER=paystack`, `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`, `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` (12+ characters; the defaults are refused in production).
 5. **Deploy.** Production builds run migrations and create the first admin (`scripts/vercel-build.sh`); preview builds skip migrations so they can't touch the production database.
 6. **Paystack → Settings → API Keys & Webhooks:** webhook `https://<project>.vercel.app/api/payments/webhook`.
