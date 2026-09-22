@@ -47,7 +47,6 @@
   & [class~="max-h-screen"] { max-height: calc(100vh / var(--phone-zoom)); }
   & [class~="min-h-[70vh]"] { min-height: calc(70vh / var(--phone-zoom)); }
   & [class~="max-h-[60vh]"] { max-height: calc(60vh / var(--phone-zoom)); }
-  & [class~="min-h-[calc(100svh-5.5rem)]"] { min-height: calc(100svh / var(--phone-zoom) - 5.5rem); }
   & [class~="h-[calc(100svh-1.5rem)]"] { height: calc(100svh / var(--phone-zoom) - 1.5rem); }
   & [class~="text-[clamp(3.25rem,9vw,7.5rem)]"] { font-size: clamp(3.25rem, 9vw / var(--phone-zoom), 7.5rem); }
   & [class~="text-[clamp(5rem,22vw,20rem)]"] { font-size: clamp(5rem, 22vw / var(--phone-zoom), 20rem); }

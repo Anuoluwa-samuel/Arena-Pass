@@ -86,7 +86,7 @@ export default async function LandingPage() {
           </div>
         )}
 
-        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl content-center gap-14 px-4 pb-24 pt-14 max-sm:gap-10 max-sm:pb-20 max-sm:pt-8 sm:px-6 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,2fr)] lg:gap-10 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-14 px-4 pb-24 pt-14 max-sm:gap-10 max-sm:pb-16 max-sm:pt-6 sm:min-h-[calc(100svh-5.5rem)] sm:content-center sm:px-6 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,2fr)] lg:gap-10 lg:px-8">
           {/* Side rail: the play, in steps. */}
           <Reveal trigger="mount" delay={0.35} className="order-2 flex flex-col justify-end lg:order-1 lg:py-4">
             <div className={hasImage ? railPanel : undefined}>
