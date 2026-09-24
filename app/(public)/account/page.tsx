@@ -97,7 +97,7 @@ export default async function AccountHomePage() {
                 </div>
               </div>
             ) : (
-              <div className="mt-5 flex flex-col items-start gap-5">
+              <div className="mt-5 flex flex-col items-start gap-5 max-sm:items-center max-sm:text-center">
                 <p className="font-display text-4xl font-semibold uppercase leading-none text-muted-foreground max-sm:text-3xl">No games booked</p>
                 <ArrowButton asChild variant="primary" size="sm">
                   <Link href="/sessions">Find a session</Link>
@@ -131,7 +131,7 @@ export default async function AccountHomePage() {
             <SectionLabel>Book again</SectionLabel>
             <h2 className="mt-3 text-4xl font-semibold uppercase max-sm:text-3xl">Open sessions</h2>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 max-sm:justify-center">
             <ArrowButton asChild size="sm">
               <Link href="/account/tickets">My tickets</Link>
             </ArrowButton>

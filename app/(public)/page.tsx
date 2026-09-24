@@ -117,7 +117,7 @@ export default async function LandingPage() {
             {/* On phones the CTAs hug their labels and wrap instead of stretching edge to edge:
                 a full-width pill pushes its arrow tile far from the text and reads as dead space.
                 The secondary sits a notch smaller so the hierarchy survives the narrower layout. */}
-            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-wrap items-center gap-3 max-sm:mt-7">
+            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-wrap items-center gap-3 max-sm:mt-7 max-sm:justify-center">
               <Magnetic>
                 <ArrowButton asChild variant="primary" className="max-sm:gap-3 max-sm:pl-4">
                   <Link href={primaryCta.href}>{primaryCta.label}</Link>
@@ -355,7 +355,7 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Reveal y={32} className="glass relative isolate overflow-hidden rounded-[2rem] px-6 py-20 text-center max-sm:px-5 max-sm:py-14 sm:px-12 sm:py-28">
             <div aria-hidden="true" className="absolute inset-0 -z-10">
-              <div className="animate-glow-breathe absolute -bottom-1/2 left-1/2 h-[120%] w-[80%] -translate-x-1/2 rounded-full bg-primary/40 blur-[100px]" />
+              <div className="animate-glow-breathe absolute -bottom-1/2 left-1/2 h-[120%] w-[80%] -translate-x-1/2 rounded-full bg-primary/40 blur-[min(100px,8vw)]" />
               <div className="dot-grid absolute inset-0" />
             </div>
             <SectionLabel className="justify-center">Kick-off</SectionLabel>

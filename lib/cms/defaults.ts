@@ -23,7 +23,7 @@ export const DEFAULT_HOMEPAGE: HomepageContent = {
   cta: {
     title: "Ready to Play?",
     description: "Join thousands of players who book their sessions through Arena Pass.",
-    buttonLabel: "Browse Sessions",
+    buttonLabel: "View Sessions",
     buttonHref: "/sessions",
   },
   featuredSessionsCount: 3,

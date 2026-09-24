@@ -60,7 +60,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
         <StaggerItem className="print-hidden mt-8 flex flex-col gap-3">
           <Button size="lg" variant="outline" asChild className="w-full">
             <Link href="/sessions">
-              Browse more sessions
+              View more sessions
               <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
