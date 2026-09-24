@@ -41,6 +41,7 @@ function ArrowButton({
       <Slottable>{children}</Slottable>
       <span
         aria-hidden="true"
+        data-slot="arrow-tile"
         className={cn(
           "notch relative grid shrink-0 place-items-center overflow-hidden rounded-lg transition-transform duration-300 ease-out group-hover/arrow:scale-105",
           variant === "primary" ? "bg-primary-foreground text-primary" : "bg-[var(--tile-bg)] text-[var(--tile-fg)]",

@@ -114,13 +114,16 @@ export default async function LandingPage() {
                 {homepage.hero.description}
               </p>
             </Reveal>
-            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-col gap-3 max-sm:mt-7 sm:flex-row sm:items-center">
+            {/* On phones the CTAs hug their labels and wrap instead of stretching edge to edge:
+                a full-width pill pushes its arrow tile far from the text and reads as dead space.
+                The secondary sits a notch smaller so the hierarchy survives the narrower layout. */}
+            <Reveal trigger="mount" delay={0.6} className="mt-10 flex flex-wrap items-center gap-3 max-sm:mt-7">
               <Magnetic>
-                <ArrowButton asChild variant="primary" className="w-full sm:w-auto">
+                <ArrowButton asChild variant="primary" className="max-sm:gap-3 max-sm:pl-4">
                   <Link href={primaryCta.href}>{primaryCta.label}</Link>
                 </ArrowButton>
               </Magnetic>
-              <ArrowButton asChild className="w-full sm:w-auto">
+              <ArrowButton asChild className="max-sm:h-11 max-sm:gap-3 max-sm:pl-4 max-sm:text-[0.7rem] max-sm:tracking-[0.1em] max-sm:[&>[data-slot=arrow-tile]]:size-8">
                 <Link href={secondaryCta.href}>{secondaryCta.label}</Link>
               </ArrowButton>
             </Reveal>
