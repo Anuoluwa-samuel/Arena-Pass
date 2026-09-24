@@ -65,7 +65,7 @@ export default async function AccountHomePage() {
                 </div>
               </div>
             </div>
-            <ArrowButton asChild size="sm" variant="primary" className="self-start sm:self-auto">
+            <ArrowButton asChild size="sm" variant="primary" className="self-center sm:self-auto">
               <Link href="/account/profile">Update profile</Link>
             </ArrowButton>
           </Spotlight>
