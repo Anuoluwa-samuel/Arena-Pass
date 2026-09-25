@@ -1,7 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, User } from "lucide-react"
+import { LogOut, ShieldCheck, User } from "lucide-react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
@@ -40,6 +41,7 @@ export function AdminHeader({ user }: { user: { name: string; email: string; rol
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled><User className="mr-2 size-4" />{user.roleName}</DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href="/admin/account"><ShieldCheck className="mr-2 size-4" />Security</Link></DropdownMenuItem>
             <DropdownMenuItem onSelect={signOut} className="text-destructive focus:text-destructive"><LogOut className="mr-2 size-4" />Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -105,6 +105,10 @@ export const users = pgTable(
     name: text("name").notNull(),
     phone: text("phone"),
     passwordHash: text("password_hash").notNull(),
+    /** AES-GCM ciphertext of the base32 TOTP secret (see server/auth/totp.ts), never the raw value. */
+    totpSecret: text("totp_secret"),
+    /** Set only once a code has been confirmed: a secret without this is a half-finished enrolment. */
+    totpEnabledAt: timestamp("totp_enabled_at", { withTimezone: true }),
     isActive: boolean("is_active").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
@@ -135,6 +139,10 @@ export const customers = pgTable(
     skillLevel: text("skill_level"),
     emergencyContactName: text("emergency_contact_name"),
     emergencyContactPhone: text("emergency_contact_phone"),
+    /** AES-GCM ciphertext of the base32 TOTP secret (see server/auth/totp.ts), never the raw value. */
+    totpSecret: text("totp_secret"),
+    /** Set only once a code has been confirmed: a secret without this is a half-finished enrolment. */
+    totpEnabledAt: timestamp("totp_enabled_at", { withTimezone: true }),
     isActive: boolean("is_active").notNull().default(true),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     ...timestamps,
@@ -156,12 +164,52 @@ export const authSessions = pgTable(
     principalId: uuid("principal_id").notNull(),
     tokenHash: text("token_hash").notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    /** Last authenticated request on this session; drives the admin idle timeout. */
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    /** Why the session ended, so the sign-in page can explain an idle sign-out. */
+    revokedReason: text("revoked_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("auth_sessions_principal_idx").on(t.principalType, t.principalId)]
+)
+
+/**
+ * A password has been accepted but the second factor has not. Holds the login
+ * for the few minutes it takes to type a code, without ever issuing a usable
+ * session first. Single use, like a password reset token, and only the hash is
+ * stored.
+ */
+export const twoFactorChallenges = pgTable(
+  "two_factor_challenges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    principalType: principalTypeEnum("principal_type").notNull(),
+    principalId: uuid("principal_id").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("two_factor_challenges_principal_idx").on(t.principalType, t.principalId)]
+)
+
+/** Single-use fallback codes for a lost authenticator. Stored as SHA-256, like every other secret here. */
+export const twoFactorRecoveryCodes = pgTable(
+  "two_factor_recovery_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    principalType: principalTypeEnum("principal_type").notNull(),
+    principalId: uuid("principal_id").notNull(),
+    codeHash: text("code_hash").notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("two_factor_recovery_codes_principal_idx").on(t.principalType, t.principalId)]
 )
 
 /** Single-use customer password reset links. Only the SHA-256 of the token is stored. */
@@ -638,6 +686,8 @@ export type User = typeof users.$inferSelect
 export type Customer = typeof customers.$inferSelect
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect
 export type AuthSession = typeof authSessions.$inferSelect
+export type TwoFactorChallenge = typeof twoFactorChallenges.$inferSelect
+export type TwoFactorRecoveryCode = typeof twoFactorRecoveryCodes.$inferSelect
 export type Session = typeof sessions.$inferSelect
 export type NewSession = typeof sessions.$inferInsert
 export type Team = typeof teams.$inferSelect

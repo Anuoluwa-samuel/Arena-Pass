@@ -29,6 +29,13 @@
       "when": 1789617084458,
       "tag": "0003_lumpy_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790317716923,
+      "tag": "0004_organic_otto_octavius",
+      "breakpoints": true
     }
   ]
 }

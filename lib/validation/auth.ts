@@ -20,3 +20,8 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(20).max(200),
   password: z.string().min(8).max(200),
 })
+
+/** A 6-digit authenticator code, or a recovery code — both arrive in the same field. */
+export const twoFactorCodeSchema = z.object({
+  code: z.string().trim().min(6).max(20),
+})

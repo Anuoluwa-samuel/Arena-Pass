@@ -32,7 +32,7 @@ BOOTSTRAP_ADMIN_EMAIL=owner@example.com      # first boot only
 BOOTSTRAP_ADMIN_PASSWORD=<strong password>   # change after first login
 ```
 
-Never commit `.env*` (only `.env.example`). Rotating `QR_SECRET` invalidates existing QR codes and ticket links; rotating `SESSION_SECRET` is safe (sessions are database-backed).
+Never commit `.env*` (only `.env.example`). Rotating `QR_SECRET` invalidates existing QR codes and ticket links. Rotating `SESSION_SECRET` used to be safe because sessions are database-backed, but it now also derives the key that encrypts stored TOTP secrets (`server/auth/totp.ts`): rotating it leaves anyone with two-factor authentication on unable to sign in, and they must be reset and re-enrol. Rotate it only deliberately.
 
 ## Steps
 

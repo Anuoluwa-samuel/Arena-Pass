@@ -3,7 +3,9 @@ import { Reveal } from "@/components/motion"
 import { PageHeader } from "@/components/shared/page-header"
 import { PasswordForm } from "@/components/site/password-form"
 import { ProfileForm } from "@/components/site/profile-form"
+import { TwoFactorCard } from "@/components/site/two-factor-card"
 import { getCurrentCustomer } from "@/server/auth/session"
+import { twoFactorStatus } from "@/server/auth/two-factor"
 import { getCustomerProfile } from "@/server/services/profile"
 import { initials } from "@/lib/format"
 import { GENDER_LABELS, POSITION_LABELS, SKILL_LABELS, type Gender, type Position, type SkillLevel } from "@/lib/domain/profile"
@@ -14,7 +16,10 @@ export const metadata = { title: "Profile" }
 export default async function ProfilePage() {
   const customer = await getCurrentCustomer()
   if (!customer) redirect("/login?next=/account/profile")
-  const profile = await getCustomerProfile(customer.id)
+  const [profile, twoFactor] = await Promise.all([
+    getCustomerProfile(customer.id),
+    twoFactorStatus("customer", customer.id),
+  ])
   // Local calendar date for the date-of-birth picker's upper bound.
   const today = new Date().toLocaleDateString("en-CA")
 
@@ -41,6 +46,9 @@ export default async function ProfilePage() {
           </Reveal>
           <Reveal trigger="mount" delay={0.2}>
             <PasswordForm hasPassword={profile.hasPassword} usesGoogle={profile.usesGoogle} />
+          </Reveal>
+          <Reveal trigger="mount" delay={0.25}>
+            <TwoFactorCard initial={{ enabled: twoFactor.enabled, recoveryCodesLeft: twoFactor.recoveryCodesLeft }} />
           </Reveal>
         </div>
       </div>

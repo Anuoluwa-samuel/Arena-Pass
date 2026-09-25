@@ -13,6 +13,19 @@ export const CUSTOMER_COOKIE = "ap_customer_session"
 const ADMIN_TTL_MS = 12 * 60 * 60 * 1000 // 12h
 const CUSTOMER_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30d
 
+/**
+ * Admin sessions also end after this long without a request. The back office
+ * shows takings, refunds and customer data, and is often left open on a shared
+ * screen, so the 12h ceiling alone is too generous. Customers are deliberately
+ * exempt: a booking app that signs players out mid-visit costs bookings.
+ */
+const ADMIN_IDLE_MS = 30 * 60 * 1000 // 30min
+/** Don't write lastSeenAt on every single request — once a minute is enough to enforce the above. */
+const LAST_SEEN_WRITE_INTERVAL_MS = 60 * 1000
+
+export const IDLE_TIMEOUT_REASON = "idle_timeout"
+export const ADMIN_IDLE_TIMEOUT_MINUTES = ADMIN_IDLE_MS / 60000
+
 type PrincipalType = "user" | "customer"
 
 export interface AuthenticatedUser {
@@ -78,9 +91,12 @@ export async function clearSessionCookie(principalType: PrincipalType) {
   store.set(principalType === "user" ? ADMIN_COOKIE : CUSTOMER_COOKIE, "", { ...cookieOptions(0), maxAge: 0 })
 }
 
-export async function revokeSession(sessionId: string) {
+export async function revokeSession(sessionId: string, reason?: string) {
   const database = await db()
-  await database.update(schema.authSessions).set({ revokedAt: new Date() }).where(eq(schema.authSessions.id, sessionId))
+  await database
+    .update(schema.authSessions)
+    .set({ revokedAt: new Date(), revokedReason: reason ?? null })
+    .where(eq(schema.authSessions.id, sessionId))
 }
 
 export async function revokeAllSessionsFor(principalType: PrincipalType, principalId: string) {
@@ -91,10 +107,15 @@ export async function revokeAllSessionsFor(principalType: PrincipalType, princip
     .where(and(eq(schema.authSessions.principalType, principalType), eq(schema.authSessions.principalId, principalId)))
 }
 
+/**
+ * Resolves a live session and, for admins, applies the idle timeout. This is the
+ * single chokepoint every authenticated request passes through, so enforcing it
+ * here means no route can forget to.
+ */
 async function findLiveSession(principalType: PrincipalType, token: string | undefined) {
   if (!token) return null
   const database = await db()
-  return database.query.authSessions.findFirst({
+  const session = await database.query.authSessions.findFirst({
     where: and(
       eq(schema.authSessions.tokenHash, sha256(token)),
       eq(schema.authSessions.principalType, principalType),
@@ -102,6 +123,31 @@ async function findLiveSession(principalType: PrincipalType, token: string | und
       gt(schema.authSessions.expiresAt, new Date())
     ),
   })
+  if (!session) return null
+  if (principalType !== "user") return session
+
+  const now = Date.now()
+  const idleFor = now - session.lastSeenAt.getTime()
+  if (idleFor > ADMIN_IDLE_MS) {
+    // Revoked rather than just ignored, so the row records why and the sign-in
+    // page can say "signed out for inactivity" instead of a bare prompt.
+    await revokeSession(session.id, IDLE_TIMEOUT_REASON)
+    return null
+  }
+  if (idleFor > LAST_SEEN_WRITE_INTERVAL_MS) {
+    await database.update(schema.authSessions).set({ lastSeenAt: new Date(now) }).where(eq(schema.authSessions.id, session.id))
+  }
+  return session
+}
+
+/** True when this admin session ended because it went idle, for the sign-in page's message. */
+export async function wasIdleTimeout(token: string | undefined) {
+  if (!token) return false
+  const database = await db()
+  const session = await database.query.authSessions.findFirst({
+    where: and(eq(schema.authSessions.tokenHash, sha256(token)), eq(schema.authSessions.principalType, "user")),
+  })
+  return session?.revokedReason === IDLE_TIMEOUT_REASON
 }
 
 /** Resolves the admin user for the current request (memoised per request). */

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { FloatingField, LoginForm } from "@/components/ui/login-form"
 import { Spinner } from "@/components/ui/spinner"
 import { AuthShell } from "@/components/site/auth-shell"
+import { TwoFactorPrompt } from "@/components/site/two-factor-prompt"
 import { api, ApiError, errorMessage, fieldErrors } from "@/lib/api-client"
 import { safeNextPath } from "@/lib/safe-next"
 
@@ -48,21 +49,47 @@ export function AuthForm({ mode, siteName, googleEnabled }: { mode: "login" | "s
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  // Set when the password was right but the account has 2FA on: the form swaps
+  // to the code step rather than navigating anywhere.
+  const [needsCode, setNeedsCode] = useState(false)
+
+  const finish = () => {
+    router.push(next)
+    router.refresh()
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrors({})
     try {
-      if (mode === "login") await api.post("/api/auth/customer/login", { email, password })
-      else await api.post("/api/auth/customer/signup", { name, email, phone, password })
-      router.push(next)
-      router.refresh()
+      if (mode === "login") {
+        const res = await api.post<{ twoFactorRequired?: boolean }>("/api/auth/customer/login", { email, password })
+        if (res?.data?.twoFactorRequired) {
+          setLoading(false)
+          setPassword("")
+          setNeedsCode(true)
+          return
+        }
+      } else {
+        await api.post("/api/auth/customer/signup", { name, email, phone, password })
+      }
+      finish()
     } catch (err) {
       setLoading(false)
       if (err instanceof ApiError && err.code === "VALIDATION_ERROR") setErrors(fieldErrors(err))
       toast.error(errorMessage(err))
     }
+  }
+
+  if (needsCode) {
+    return (
+      <AuthShell siteName={siteName}>
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <TwoFactorPrompt scope="customer" onVerified={finish} onCancel={() => setNeedsCode(false)} />
+        </div>
+      </AuthShell>
+    )
   }
 
   return (

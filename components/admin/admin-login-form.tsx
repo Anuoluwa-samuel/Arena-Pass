@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button"
 import { FloatingField, LoginForm } from "@/components/ui/login-form"
 import { Spinner } from "@/components/ui/spinner"
 import { AuthShell } from "@/components/site/auth-shell"
+import { TwoFactorPrompt } from "@/components/site/two-factor-prompt"
 import { api, ApiError, errorMessage, fieldErrors } from "@/lib/api-client"
 import { safeNextPath } from "@/lib/safe-next"
 
-export function AdminLoginForm({ siteName }: { siteName: string }) {
+export function AdminLoginForm({ siteName, idleTimeout = false }: { siteName: string; idleTimeout?: boolean }) {
   const router = useRouter()
   const params = useSearchParams()
   // Same-site path check first, then keep admins inside the admin area.
@@ -23,20 +24,41 @@ export function AdminLoginForm({ siteName }: { siteName: string }) {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [needsCode, setNeedsCode] = useState(false)
+
+  const finish = () => {
+    router.push(next)
+    router.refresh()
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setErrors({})
     try {
-      await api.post("/api/auth/login", { email, password })
-      router.push(next)
-      router.refresh()
+      const res = await api.post<{ twoFactorRequired?: boolean }>("/api/auth/login", { email, password })
+      if (res?.data?.twoFactorRequired) {
+        setLoading(false)
+        setPassword("")
+        setNeedsCode(true)
+        return
+      }
+      finish()
     } catch (err) {
       setLoading(false)
       if (err instanceof ApiError && err.code === "VALIDATION_ERROR") setErrors(fieldErrors(err))
       toast.error(errorMessage(err))
     }
+  }
+
+  if (needsCode) {
+    return (
+      <AuthShell siteName={siteName} className="min-h-svh">
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <TwoFactorPrompt scope="admin" onVerified={finish} onCancel={() => setNeedsCode(false)} />
+        </div>
+      </AuthShell>
+    )
   }
 
   return (
@@ -60,6 +82,11 @@ export function AdminLoginForm({ siteName }: { siteName: string }) {
           </Link>
         }
       >
+        {idleTimeout && (
+          <p role="status" className="-mb-2 rounded-lg border border-border bg-secondary/60 px-3 py-2 text-sm text-muted-foreground">
+            You were signed out after 30 minutes of inactivity. Please sign in again.
+          </p>
+        )}
         <FloatingField id="email" type="email" label="Email address" icon={Mail} value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required error={errors.email} />
         <FloatingField
           id="password"
