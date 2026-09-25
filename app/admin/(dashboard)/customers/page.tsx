@@ -29,7 +29,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         empty={<EmptyState icon={Users} title="No customers found" />}
         columns={[
           { key: "name", header: "Customer", hideOnMobile: true, cell: (r) => <div><Link href={`/admin/customers/${r.customer.id}`} className="font-medium hover:underline">{r.customer.name}</Link><p className="text-xs text-muted-foreground">{r.customer.email}{r.customer.phone ? ` · ${r.customer.phone}` : ""}</p></div> },
-          { key: "account", header: "Account", cell: (r) => (r.customer.passwordHash ? <ToneBadge tone="success">Registered</ToneBadge> : <ToneBadge tone="muted">Guest</ToneBadge>) },
+          { key: "account", header: "Account", cell: (r) => (r.customer.hasPassword ? <ToneBadge tone="success">Registered</ToneBadge> : <ToneBadge tone="muted">Guest</ToneBadge>) },
           { key: "tickets", header: "Tickets", cell: (r) => r.ticketCount },
           { key: "spent", header: "Spent", cell: (r) => formatMoney(r.totalSpent, settings.currency) },
           { key: "since", header: "Since", cell: (r) => formatShortDate(r.customer.createdAt) },

@@ -20,6 +20,20 @@ export async function upsertCustomerByEmail(input: { name: string; email: string
   return created
 }
 
+/**
+ * Customer rows reach the admin UI whole, so credentials are stripped here:
+ * the password hash, and the encrypted TOTP secret which is reversible with the
+ * app key and so is a live credential, not just a digest.
+ */
+function sanitizeCustomer(c: schema.Customer) {
+  const { passwordHash: _p, totpSecret: _t, ...rest } = c
+  void _p
+  void _t
+  // hasPassword distinguishes a registered account from a guest checkout, which
+  // is what the admin list needs — it was reading the hash itself before.
+  return { ...rest, hasPassword: Boolean(c.passwordHash), twoFactorEnabled: Boolean(c.totpEnabledAt) }
+}
+
 export async function listCustomers(opts: { q?: string; page?: number; pageSize?: number } = {}) {
   const database = await db()
   const page = opts.page ?? 1
@@ -39,7 +53,10 @@ export async function listCustomers(opts: { q?: string; page?: number; pageSize?
     .orderBy(desc(schema.customers.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize)
-  return { items, meta: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } }
+  return {
+    items: items.map((row) => ({ ...row, customer: sanitizeCustomer(row.customer) })),
+    meta: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) },
+  }
 }
 
 export async function getCustomerDetail(id: string) {
@@ -52,7 +69,7 @@ export async function getCustomerDetail(id: string) {
     .innerJoin(schema.sessions, eq(schema.sessions.id, schema.tickets.sessionId))
     .where(eq(schema.tickets.customerId, id))
     .orderBy(desc(schema.tickets.purchasedAt))
-  return { customer, tickets: ticketRows }
+  return { customer: sanitizeCustomer(customer), tickets: ticketRows }
 }
 
 export async function updateCustomer(id: string, patch: { name?: string; phone?: string | null; isActive?: boolean }) {
@@ -63,5 +80,5 @@ export async function updateCustomer(id: string, patch: { name?: string; phone?:
     .where(eq(schema.customers.id, id))
     .returning()
   if (!row) throw notFound("Customer")
-  return row
+  return sanitizeCustomer(row)
 }

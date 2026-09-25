@@ -38,10 +38,16 @@ export async function listUsers(opts: { q?: string; roleKey?: string; page?: num
   return { items: items.map(({ user, role }) => ({ ...sanitize(user), role })), meta: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } }
 }
 
+/**
+ * Strips every credential before a user row leaves the service. `totpSecret` is
+ * encrypted rather than hashed, so it must never travel even to an admin UI;
+ * callers get a boolean instead.
+ */
 function sanitize(u: schema.User) {
-  const { passwordHash: _p, ...rest } = u
+  const { passwordHash: _p, totpSecret: _t, ...rest } = u
   void _p
-  return rest
+  void _t
+  return { ...rest, twoFactorEnabled: Boolean(u.totpEnabledAt) }
 }
 
 async function roleByKey(key: RoleKey) {
@@ -95,6 +101,45 @@ export async function updateUser(id: string, input: Partial<z.infer<typeof userI
   if (input.isActive === false || input.password || (input.roleKey && input.roleKey !== existingRole.key)) await revokeAllSessionsFor("user", id)
   await recordAudit(ctx.actor, { action: "user.update", entityType: "user", entityId: id, arenaId: row.arenaId, description: `Updated account for ${row.name}`, metadata: { role: role.key, isActive: row.isActive, passwordChanged: !!input.password } })
   return { ...sanitize(row), role: { key: role.key, name: role.name } }
+}
+
+/**
+ * Clears another admin's two-factor enrolment so they can sign in with their
+ * password again and re-enrol. The way out of a lost authenticator *and* lost
+ * recovery codes, which otherwise locks an admin out permanently.
+ *
+ * Super admins only, and never on yourself. Self-service would be a hole: an
+ * attacker sitting at an unlocked admin session could strip the second factor
+ * without producing a code, which is exactly what /api/auth/2fa/disable refuses
+ * to allow. Resetting someone else needs a second person, which is the point.
+ */
+export async function resetUserTwoFactor(id: string, ctx: { actor: AuditActor & { id?: string | null }; actorRole: RoleKey }) {
+  if (ctx.actorRole !== "SUPER_ADMIN") throw new AppError("FORBIDDEN", "Only a super admin can reset two-factor authentication")
+  if (id === ctx.actor.id) {
+    throw new AppError("CONFLICT", "Turn off your own two-factor authentication from your account page, where a current code is required")
+  }
+  const database = await db()
+  const existing = await database.query.users.findFirst({ where: and(eq(schema.users.id, id), isNull(schema.users.deletedAt)) })
+  if (!existing) throw notFound("User")
+  if (!existing.totpEnabledAt) throw new AppError("CONFLICT", `${existing.name} does not have two-factor authentication on`)
+
+  await database
+    .update(schema.users)
+    .set({ totpSecret: null, totpEnabledAt: null, updatedAt: new Date() })
+    .where(eq(schema.users.id, id))
+  await database
+    .delete(schema.twoFactorRecoveryCodes)
+    .where(and(eq(schema.twoFactorRecoveryCodes.principalType, "user"), eq(schema.twoFactorRecoveryCodes.principalId, id)))
+  // If the reset was prompted by a lost or stolen device, any session that
+  // device still holds should go with it.
+  await revokeAllSessionsFor("user", id)
+  await recordAudit(ctx.actor, {
+    action: "user.two_factor_reset",
+    entityType: "user",
+    entityId: id,
+    arenaId: existing.arenaId,
+    description: `Reset two-factor authentication for ${existing.name}`,
+  })
 }
 
 export async function deleteUser(id: string, ctx: { actor: AuditActor & { id?: string | null }; actorRole: RoleKey }) {

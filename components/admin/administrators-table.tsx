@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Pencil, Plus, Trash2, UserX } from "lucide-react"
+import { Pencil, Plus, ShieldCheck, ShieldOff, Trash2, UserX } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -19,7 +19,7 @@ import { api, ApiError, errorMessage, fieldErrors } from "@/lib/api-client"
 import { ROLE_KEYS, ROLE_LABELS, type RoleKey } from "@/lib/domain/constants"
 import { formatDateTime, formatRelative } from "@/lib/format"
 
-interface Row { id: string; name: string; email: string; phone: string | null; isActive: boolean; lastLoginAt: string | null; createdAt: string; role: { key: RoleKey; name: string } }
+interface Row { id: string; name: string; email: string; phone: string | null; isActive: boolean; lastLoginAt: string | null; createdAt: string; twoFactorEnabled: boolean; role: { key: RoleKey; name: string } }
 interface Form { name: string; email: string; phone: string; roleKey: RoleKey; password: string; isActive: boolean }
 
 export function AdministratorsTable({ users, me, canManage }: { users: Row[]; me: { id: string; roleKey: RoleKey }; canManage: boolean }) {
@@ -29,6 +29,9 @@ export function AdministratorsTable({ users, me, canManage }: { users: Row[]; me
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState<Row | null>(null)
+  const [resetting2fa, setResetting2fa] = useState<Row | null>(null)
+  // Only a super admin can clear someone else's second factor, and never their own.
+  const canReset2fa = me.roleKey === "SUPER_ADMIN"
   const roleOptions = ROLE_KEYS.filter((k) => k !== "SUPER_ADMIN" || me.roleKey === "SUPER_ADMIN")
 
   function blank(): Form {
@@ -68,6 +71,18 @@ export function AdministratorsTable({ users, me, canManage }: { users: Row[]; me
     }
   }
 
+  const resetTwoFactor = async () => {
+    if (!resetting2fa) return
+    try {
+      await api.delete(`/api/admin/users/${resetting2fa.id}/two-factor`)
+      toast.success(`${resetting2fa.name} can now sign in with their password and set it up again`)
+      router.refresh()
+    } catch (err) {
+      toast.error(errorMessage(err))
+      throw err
+    }
+  }
+
   return (
     <div className="space-y-4">
       {canManage && <div className="flex justify-end"><Button onClick={() => open(null)}><Plus className="mr-2 size-4" />Add administrator</Button></div>}
@@ -80,11 +95,17 @@ export function AdministratorsTable({ users, me, canManage }: { users: Row[]; me
           { key: "name", header: "Name", hideOnMobile: true, cell: (u) => <div><p className="font-medium">{u.name}{u.id === me.id && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}</p><p className="text-xs text-muted-foreground">{u.email}</p></div> },
           { key: "role", header: "Role", cell: (u) => <ToneBadge tone={u.role.key === "SUPER_ADMIN" ? "warning" : "info"}>{u.role.name}</ToneBadge> },
           { key: "status", header: "Status", cell: (u) => (u.isActive ? <ToneBadge tone="success">Active</ToneBadge> : <ToneBadge tone="danger">Disabled</ToneBadge>) },
+          { key: "2fa", header: "2FA", cell: (u) => (u.twoFactorEnabled ? <ToneBadge tone="success">On</ToneBadge> : <ToneBadge tone="muted">Off</ToneBadge>) },
           { key: "login", header: "Last sign-in", cell: (u) => (u.lastLoginAt ? formatRelative(u.lastLoginAt) : "Never") },
           { key: "created", header: "Added", hideOnMobile: true, cell: (u) => formatDateTime(u.createdAt) },
           { key: "actions", header: "", className: "text-right", cell: (u) => canManage ? (
             <div className="flex justify-end gap-1">
               <Button variant="ghost" size="icon-sm" onClick={() => open(u)} aria-label="Edit"><Pencil className="size-4" /></Button>
+              {canReset2fa && u.id !== me.id && u.twoFactorEnabled && (
+                <Button variant="ghost" size="icon-sm" onClick={() => setResetting2fa(u)} aria-label={`Reset two-factor authentication for ${u.name}`} title="Reset two-factor authentication">
+                  <ShieldOff className="size-4" />
+                </Button>
+              )}
               {u.id !== me.id && <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={() => setDeleting(u)} aria-label="Remove"><Trash2 className="size-4" /></Button>}
             </div>
           ) : null },
@@ -118,6 +139,15 @@ export function AdministratorsTable({ users, me, canManage }: { users: Row[]; me
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!resetting2fa}
+        onOpenChange={(o) => !o && setResetting2fa(null)}
+        title={`Reset two-factor authentication for ${resetting2fa?.name}?`}
+        description="Do this only when they have lost both their authenticator app and their recovery codes, and you have confirmed who they are by some other means. Their password alone will sign them in afterwards, until they set it up again. Every active session is signed out and the reset is recorded in the audit log."
+        confirmLabel="Reset"
+        destructive
+        onConfirm={resetTwoFactor}
+      />
       <ConfirmDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)} title={`Remove ${deleting?.name}?`} description="Their account is disabled and every active session is signed out. Audit history is kept." confirmLabel="Remove" destructive onConfirm={remove} />
     </div>
   )

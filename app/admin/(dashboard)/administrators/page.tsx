@@ -22,7 +22,7 @@ export default async function AdministratorsPage({ searchParams }: { searchParam
         </div>
       </Suspense>
       <AdministratorsTable
-        users={result.items.map((u) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, isActive: u.isActive, lastLoginAt: u.lastLoginAt?.toISOString() ?? null, createdAt: u.createdAt.toISOString(), role: u.role }))}
+        users={result.items.map((u) => ({ id: u.id, name: u.name, email: u.email, phone: u.phone, isActive: u.isActive, lastLoginAt: u.lastLoginAt?.toISOString() ?? null, createdAt: u.createdAt.toISOString(), twoFactorEnabled: u.twoFactorEnabled, role: u.role }))}
         me={{ id: user.id, roleKey: user.roleKey }}
         canManage={user.permissions.includes("users.manage")}
       />
