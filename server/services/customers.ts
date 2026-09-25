@@ -1,7 +1,9 @@
 import "server-only"
 import { and, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm"
 import { db, schema } from "@/server/db"
-import { notFound } from "@/server/http/errors"
+import { AppError, notFound } from "@/server/http/errors"
+import { revokeAllSessionsFor } from "@/server/auth/session"
+import { recordAudit, type AuditActor } from "./audit"
 
 export async function upsertCustomerByEmail(input: { name: string; email: string; phone?: string | null }) {
   const database = await db()
@@ -81,4 +83,44 @@ export async function updateCustomer(id: string, patch: { name?: string; phone?:
     .returning()
   if (!row) throw notFound("Customer")
   return sanitizeCustomer(row)
+}
+
+/**
+ * Clears a customer's two-factor enrolment, for the one who has lost both their
+ * authenticator and all ten recovery codes. Without this their account is
+ * unreachable: unlike an admin, nobody else can act on their behalf, and there
+ * is no other way back in.
+ *
+ * Deliberately not available to the customer themselves — proving who they are
+ * is the arena's job here, exactly as it is for the equivalent admin reset.
+ */
+export async function resetCustomerTwoFactor(id: string, ctx: { actor: AuditActor }) {
+  const database = await db()
+  const customer = await database.query.customers.findFirst({
+    where: and(eq(schema.customers.id, id), isNull(schema.customers.deletedAt)),
+  })
+  if (!customer) throw notFound("Customer")
+  if (!customer.totpEnabledAt) throw new AppError("CONFLICT", `${customer.name} does not have two-factor authentication on`)
+
+  await database
+    .update(schema.customers)
+    .set({ totpSecret: null, totpEnabledAt: null, updatedAt: new Date() })
+    .where(eq(schema.customers.id, id))
+  await database
+    .delete(schema.twoFactorRecoveryCodes)
+    .where(
+      and(
+        eq(schema.twoFactorRecoveryCodes.principalType, "customer"),
+        eq(schema.twoFactorRecoveryCodes.principalId, id)
+      )
+    )
+  // If a lost or stolen phone prompted this, its session should go too.
+  await revokeAllSessionsFor("customer", id)
+  await recordAudit(ctx.actor, {
+    action: "customer.two_factor_reset",
+    entityType: "customer",
+    entityId: id,
+    arenaId: customer.arenaId,
+    description: `Reset two-factor authentication for ${customer.name}`,
+  })
 }

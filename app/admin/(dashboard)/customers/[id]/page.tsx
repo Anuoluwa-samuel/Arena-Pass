@@ -39,7 +39,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">
         <div className="space-y-6">
-          <CustomerEditor customer={{ id: customer.id, name: customer.name, phone: customer.phone ?? "", isActive: customer.isActive }} canManage={user.permissions.includes("customers.manage")} />
+          <CustomerEditor customer={{ id: customer.id, name: customer.name, phone: customer.phone ?? "", isActive: customer.isActive, twoFactorEnabled: customer.twoFactorEnabled }} canManage={user.permissions.includes("customers.manage")} />
           <Card>
             <CardHeader><CardTitle className="text-base">Player profile</CardTitle></CardHeader>
             <CardContent>

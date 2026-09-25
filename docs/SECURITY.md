@@ -31,6 +31,6 @@
 - Customer sign-up does not verify email ownership. Password reset and Google sign-in both prove it, which is why they revoke sessions and why linking Google clears an earlier password.
 - Consider a Content-Security-Policy header once third-party scripts are finalised.
 - Two-factor authentication is opt-in. Consider requiring it for SUPER_ADMIN accounts before handling live payments, rather than leaving it to each admin.
-- An admin who loses both their authenticator and their recovery codes needs another super admin to clear `totp_secret`/`totp_enabled_at` for them; there is no self-service path yet.
+- Losing both the authenticator and every recovery code needs staff help: a super admin clears an admin's enrolment from the Administrators page, and anyone with `customers.manage` clears a customer's from that customer's page. Neither is self-service, by design.
 - `SESSION_SECRET` now protects stored TOTP secrets, so rotating it stops enrolled authenticator apps working and forces re-enrolment. Recovery codes survive it (they are hashed, and the sign-in path treats an unreadable secret as a failed code rather than an error), so it degrades to "everyone uses a recovery code once" rather than a lockout. See docs/DEPLOYMENT.md.
-- Customers have no admin-side 2FA reset, unlike admins. A customer who loses their authenticator *and* all ten recovery codes cannot get back in without direct database access.
+- Resetting someone's 2FA (admin or customer) proves nothing about who asked for it: staff must confirm identity out of band before using it. Both resets are audited (`user.two_factor_reset`, `customer.two_factor_reset`) and revoke every session the account holds.

@@ -30,6 +30,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         columns={[
           { key: "name", header: "Customer", hideOnMobile: true, cell: (r) => <div><Link href={`/admin/customers/${r.customer.id}`} className="font-medium hover:underline">{r.customer.name}</Link><p className="text-xs text-muted-foreground">{r.customer.email}{r.customer.phone ? ` · ${r.customer.phone}` : ""}</p></div> },
           { key: "account", header: "Account", cell: (r) => (r.customer.hasPassword ? <ToneBadge tone="success">Registered</ToneBadge> : <ToneBadge tone="muted">Guest</ToneBadge>) },
+          { key: "2fa", header: "2FA", cell: (r) => (r.customer.twoFactorEnabled ? <ToneBadge tone="success">On</ToneBadge> : <ToneBadge tone="muted">Off</ToneBadge>) },
           { key: "tickets", header: "Tickets", cell: (r) => r.ticketCount },
           { key: "spent", header: "Spent", cell: (r) => formatMoney(r.totalSpent, settings.currency) },
           { key: "since", header: "Since", cell: (r) => formatShortDate(r.customer.createdAt) },
