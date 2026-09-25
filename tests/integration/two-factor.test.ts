@@ -14,6 +14,7 @@ import {
   twoFactorStatus,
 } from "@/server/auth/two-factor"
 import { currentTotpCode } from "@/server/auth/totp"
+import { verifyCurrentPrincipalCode } from "@/server/auth/principal"
 
 let ctx: Awaited<ReturnType<typeof createTestDb>>
 beforeAll(async () => {
@@ -152,6 +153,51 @@ describe("recovery codes", () => {
     await replaceRecoveryCodes("customer", customer.id)
     const { token } = await createTwoFactorChallenge("customer", customer.id, meta)
     await expect(consumeTwoFactorChallenge("customer", token, recoveryCodes[0])).rejects.toThrow(/not right/i)
+  })
+})
+
+/**
+ * If SESSION_SECRET is rotated (or a restore goes wrong) the stored secrets can
+ * no longer be decrypted. Recovery codes are hashed rather than encrypted, so
+ * they survive that — and they must keep working, or the account is lost.
+ */
+describe("when the stored secret can no longer be decrypted", () => {
+  /** Flips a byte of the ciphertext: indistinguishable from a key change. */
+  async function corruptSecret(customerId: string) {
+    const row = await ctx.db.query.customers.findFirst({ where: eq(schema.customers.id, customerId) })
+    const [iv, tag, data] = row!.totpSecret!.split(".")
+    const buf = Buffer.from(data, "base64url")
+    buf[0] ^= 0xff
+    await ctx.db
+      .update(schema.customers)
+      .set({ totpSecret: [iv, tag, buf.toString("base64url")].join(".") })
+      .where(eq(schema.customers.id, customerId))
+  }
+
+  it("rejects the authenticator code cleanly instead of throwing a crypto error", async () => {
+    const { customer, secret } = await enrol()
+    await corruptSecret(customer.id)
+    const { token } = await createTwoFactorChallenge("customer", customer.id, meta)
+    await expect(consumeTwoFactorChallenge("customer", token, currentTotpCode(secret))).rejects.toThrow(/not right/i)
+  })
+
+  it("still accepts a recovery code, so the account is not lost", async () => {
+    const { customer, recoveryCodes } = await enrol()
+    await corruptSecret(customer.id)
+    const { token } = await createTwoFactorChallenge("customer", customer.id, meta)
+    await expect(consumeTwoFactorChallenge("customer", token, recoveryCodes[0])).resolves.toMatchObject({
+      principalId: customer.id,
+      usedRecoveryCode: true,
+    })
+  })
+
+  it("lets the recovery code turn 2FA off, so they can enrol again", async () => {
+    const { customer, recoveryCodes } = await enrol()
+    await corruptSecret(customer.id)
+    await verifyCurrentPrincipalCode("customer", customer.id, recoveryCodes[0])
+    await disableTwoFactor("customer", customer.id)
+    expect(await isTwoFactorEnabled("customer", customer.id)).toBe(false)
+    await expect(beginTwoFactorEnrolment("customer", customer.id)).resolves.toHaveProperty("secret")
   })
 })
 

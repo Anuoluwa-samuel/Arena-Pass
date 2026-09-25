@@ -139,6 +139,25 @@ export function decryptSecret(stored: string) {
   return Buffer.concat([decipher.update(Buffer.from(data, "base64url")), decipher.final()]).toString("utf8")
 }
 
+/**
+ * Same, but returns null instead of throwing when the stored value cannot be
+ * read — a rotated SESSION_SECRET, a bad restore, a truncated column.
+ *
+ * Callers must use this on the sign-in path. Recovery codes are hashed, not
+ * encrypted, so they stay valid even when the secret does not: letting a
+ * decryption failure throw would take the recovery path down with it and lock
+ * the account permanently, which is exactly what recovery codes exist to
+ * prevent.
+ */
+export function decryptSecretOrNull(stored: string | null) {
+  if (!stored) return null
+  try {
+    return decryptSecret(stored)
+  } catch {
+    return null
+  }
+}
+
 // --- recovery codes ----------------------------------------------------------------
 export const RECOVERY_CODE_COUNT = 10
 

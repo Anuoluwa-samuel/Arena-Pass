@@ -32,4 +32,5 @@
 - Consider a Content-Security-Policy header once third-party scripts are finalised.
 - Two-factor authentication is opt-in. Consider requiring it for SUPER_ADMIN accounts before handling live payments, rather than leaving it to each admin.
 - An admin who loses both their authenticator and their recovery codes needs another super admin to clear `totp_secret`/`totp_enabled_at` for them; there is no self-service path yet.
-- `SESSION_SECRET` now protects stored TOTP secrets, so rotating it forces every enrolled user to re-enrol (see docs/DEPLOYMENT.md).
+- `SESSION_SECRET` now protects stored TOTP secrets, so rotating it stops enrolled authenticator apps working and forces re-enrolment. Recovery codes survive it (they are hashed, and the sign-in path treats an unreadable secret as a failed code rather than an error), so it degrades to "everyone uses a recovery code once" rather than a lockout. See docs/DEPLOYMENT.md.
+- Customers have no admin-side 2FA reset, unlike admins. A customer who loses their authenticator *and* all ten recovery codes cannot get back in without direct database access.

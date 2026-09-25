@@ -32,7 +32,7 @@ BOOTSTRAP_ADMIN_EMAIL=owner@example.com      # first boot only
 BOOTSTRAP_ADMIN_PASSWORD=<strong password>   # change after first login
 ```
 
-Never commit `.env*` (only `.env.example`). Rotating `QR_SECRET` invalidates existing QR codes and ticket links. Rotating `SESSION_SECRET` used to be safe because sessions are database-backed, but it now also derives the key that encrypts stored TOTP secrets (`server/auth/totp.ts`): rotating it leaves anyone with two-factor authentication on unable to sign in, and they must be reset and re-enrol. Rotate it only deliberately.
+Never commit `.env*` (only `.env.example`). Rotating `QR_SECRET` invalidates existing QR codes and ticket links. Rotating `SESSION_SECRET` used to be safe because sessions are database-backed. It now also derives the key that encrypts stored TOTP secrets (`server/auth/totp.ts`), so rotating it stops every enrolled authenticator app from working. It is not a lockout: recovery codes are hashed rather than encrypted, so they still work, and signing in with one lets the user turn 2FA off and enrol again. Plan for that — tell enrolled users first, or rotate while nobody is enrolled. A super admin can also clear another admin's enrolment from the Administrators page.
 
 ## Steps
 

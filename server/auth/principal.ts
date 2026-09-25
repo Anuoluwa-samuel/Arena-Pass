@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { db, schema } from "@/server/db"
 import { AppError } from "@/server/http/errors"
 import { getCurrentCustomer, getCurrentUser } from "./session"
-import { decryptSecret, normaliseRecoveryCode, verifyTotp } from "./totp"
+import { decryptSecretOrNull, normaliseRecoveryCode, verifyTotp } from "./totp"
 import { sha256 } from "./tokens"
 import type { PrincipalType } from "./two-factor"
 
@@ -38,7 +38,10 @@ export async function verifyCurrentPrincipalCode(principalType: PrincipalType, p
           where: and(eq(schema.customers.id, principalId), isNull(schema.customers.deletedAt)),
         })
   if (!principal?.totpSecret) throw new AppError("CONFLICT", "Two-factor authentication is not set up")
-  if (verifyTotp(decryptSecret(principal.totpSecret), code)) return
+  // An unreadable secret still leaves recovery codes, which are enough to turn
+  // 2FA off and enrol again — the way out if the stored secret is unusable.
+  const secret = decryptSecretOrNull(principal.totpSecret)
+  if (secret && verifyTotp(secret, code)) return
 
   const hash = sha256(normaliseRecoveryCode(code))
   const recovery = await database.query.twoFactorRecoveryCodes.findFirst({

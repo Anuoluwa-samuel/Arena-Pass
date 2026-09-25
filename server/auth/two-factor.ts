@@ -5,7 +5,7 @@ import { db, schema } from "@/server/db"
 import { AppError } from "@/server/http/errors"
 import { randomToken, sha256 } from "./tokens"
 import {
-  decryptSecret,
+  decryptSecretOrNull,
   encryptSecret,
   generateRecoveryCodes,
   generateTotpSecret,
@@ -93,7 +93,11 @@ export async function confirmTwoFactorEnrolment(principalType: PrincipalType, pr
   const principal = await loadPrincipal(principalType, principalId)
   if (principal.totpEnabledAt) throw new AppError("CONFLICT", "Two-factor authentication is already on for this account")
   if (!principal.totpSecret) throw new AppError("CONFLICT", "Start the setup again to get a fresh QR code")
-  if (!verifyTotp(decryptSecret(principal.totpSecret), code)) {
+  const pending = decryptSecretOrNull(principal.totpSecret)
+  // Only reachable if the key changed between the QR being shown and the code
+  // being typed. Nothing is enabled yet, so a fresh QR fixes it.
+  if (!pending) throw new AppError("CONFLICT", "Start the setup again to get a fresh QR code")
+  if (!verifyTotp(pending, code)) {
     throw new AppError("INVALID_CREDENTIALS", "That code is not right. Check your authenticator and try again.")
   }
   const database = await db()
@@ -191,8 +195,12 @@ export async function consumeTwoFactorChallenge(
   const principal = await loadPrincipal(principalType, challenge.principalId)
   if (!principal.totpSecret || !principal.totpEnabledAt) throw new AppError("UNAUTHORIZED", "Two-factor authentication is not set up")
 
+  // Null when the stored secret can no longer be decrypted. That must not throw
+  // here: the recovery codes below are hashed, still valid, and are the whole
+  // point of having a fallback.
+  const secret = decryptSecretOrNull(principal.totpSecret)
   let usedRecoveryCode = false
-  if (!verifyTotp(decryptSecret(principal.totpSecret), code)) {
+  if (!secret || !verifyTotp(secret, code)) {
     const hash = sha256(normaliseRecoveryCode(code))
     const recovery = await database.query.twoFactorRecoveryCodes.findFirst({
       where: and(
