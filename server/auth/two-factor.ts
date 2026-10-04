@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, gt, isNull, lt, sql } from "drizzle-orm"
 import QRCode from "qrcode"
 import { db, schema } from "@/server/db"
 import { AppError } from "@/server/http/errors"
@@ -16,6 +16,12 @@ import {
 
 /** A password has been accepted; this is how long the second step stays open. */
 const CHALLENGE_TTL_MS = 5 * 60 * 1000
+/**
+ * Codes one challenge accepts before it is burnt and the password is needed
+ * again. Counted on the challenge row, not per IP, so spreading guesses across
+ * addresses or serverless instances buys nothing.
+ */
+export const MAX_CHALLENGE_ATTEMPTS = 5
 
 export type PrincipalType = "user" | "customer"
 
@@ -179,18 +185,26 @@ export async function consumeTwoFactorChallenge(
   token: string | undefined,
   code: string
 ): Promise<{ principalId: string; usedRecoveryCode: boolean }> {
-  if (!token) throw new AppError("UNAUTHORIZED", "Your sign-in has expired. Please enter your password again.")
+  const expired = () => new AppError("UNAUTHORIZED", "Your sign-in has expired. Please enter your password again.")
+  if (!token) throw expired()
   const database = await db()
-  const challenge = await database.query.twoFactorChallenges.findFirst({
-    where: and(
-      eq(schema.twoFactorChallenges.tokenHash, sha256(token)),
-      eq(schema.twoFactorChallenges.principalType, principalType),
-      isNull(schema.twoFactorChallenges.consumedAt)
-    ),
-  })
-  if (!challenge || challenge.expiresAt <= new Date()) {
-    throw new AppError("UNAUTHORIZED", "Your sign-in has expired. Please enter your password again.")
-  }
+  const t = schema.twoFactorChallenges
+  // Spend an attempt before checking the code, in one conditional update, so a
+  // burst of parallel guesses can't all read the same count and slip past the cap.
+  const [challenge] = await database
+    .update(t)
+    .set({ attempts: sql`${t.attempts} + 1` })
+    .where(
+      and(
+        eq(t.tokenHash, sha256(token)),
+        eq(t.principalType, principalType),
+        isNull(t.consumedAt),
+        gt(t.expiresAt, new Date()),
+        lt(t.attempts, MAX_CHALLENGE_ATTEMPTS)
+      )
+    )
+    .returning()
+  if (!challenge) throw expired()
 
   const principal = await loadPrincipal(principalType, challenge.principalId)
   if (!principal.totpSecret || !principal.totpEnabledAt) throw new AppError("UNAUTHORIZED", "Two-factor authentication is not set up")
@@ -210,20 +224,31 @@ export async function consumeTwoFactorChallenge(
         isNull(schema.twoFactorRecoveryCodes.usedAt)
       ),
     })
-    if (!recovery) throw new AppError("INVALID_CREDENTIALS", "That code is not right")
+    if (!recovery) throw wrongCode(challenge.attempts)
     // Conditional update so two parallel submissions of the same code can't both win.
     const claimed = await database
       .update(schema.twoFactorRecoveryCodes)
       .set({ usedAt: new Date() })
       .where(and(eq(schema.twoFactorRecoveryCodes.id, recovery.id), isNull(schema.twoFactorRecoveryCodes.usedAt)))
       .returning()
-    if (claimed.length === 0) throw new AppError("INVALID_CREDENTIALS", "That code is not right")
+    if (claimed.length === 0) throw wrongCode(challenge.attempts)
     usedRecoveryCode = true
   }
 
-  await database
-    .update(schema.twoFactorChallenges)
+  // Conditional, like the recovery code claim: one challenge yields one session.
+  const consumed = await database
+    .update(t)
     .set({ consumedAt: new Date() })
-    .where(eq(schema.twoFactorChallenges.id, challenge.id))
+    .where(and(eq(t.id, challenge.id), isNull(t.consumedAt)))
+    .returning({ id: t.id })
+  if (consumed.length === 0) throw expired()
   return { principalId: challenge.principalId, usedRecoveryCode }
+}
+
+/** The last allowed attempt failing ends the challenge, so say so rather than inviting a doomed retry. */
+function wrongCode(attempts: number) {
+  if (attempts >= MAX_CHALLENGE_ATTEMPTS) {
+    return new AppError("UNAUTHORIZED", "Too many wrong codes. Please enter your password again.")
+  }
+  return new AppError("INVALID_CREDENTIALS", "That code is not right")
 }

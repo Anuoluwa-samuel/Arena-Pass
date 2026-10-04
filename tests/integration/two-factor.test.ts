@@ -9,6 +9,7 @@ import {
   consumeTwoFactorChallenge,
   createTwoFactorChallenge,
   disableTwoFactor,
+  MAX_CHALLENGE_ATTEMPTS,
   isTwoFactorEnabled,
   replaceRecoveryCodes,
   twoFactorStatus,
@@ -115,6 +116,38 @@ describe("sign-in challenge", () => {
 
   it("rejects a missing token", async () => {
     await expect(consumeTwoFactorChallenge("customer", undefined, "000000")).rejects.toThrow(/expired/i)
+  })
+
+  it("burns the challenge after too many wrong codes, even if the right one follows", async () => {
+    const { customer, secret } = await enrol()
+    const { token } = await createTwoFactorChallenge("customer", customer.id, meta)
+    for (let i = 1; i < MAX_CHALLENGE_ATTEMPTS; i++) {
+      await expect(consumeTwoFactorChallenge("customer", token, "000000")).rejects.toThrow(/not right/i)
+    }
+    await expect(consumeTwoFactorChallenge("customer", token, "000000")).rejects.toThrow(/too many wrong codes/i)
+    await expect(consumeTwoFactorChallenge("customer", token, currentTotpCode(secret))).rejects.toThrow(/expired/i)
+  })
+
+  it("still accepts the right code on the last allowed attempt", async () => {
+    const { customer, secret } = await enrol()
+    const { token } = await createTwoFactorChallenge("customer", customer.id, meta)
+    for (let i = 1; i < MAX_CHALLENGE_ATTEMPTS; i++) {
+      await expect(consumeTwoFactorChallenge("customer", token, "000000")).rejects.toThrow(/not right/i)
+    }
+    const result = await consumeTwoFactorChallenge("customer", token, currentTotpCode(secret))
+    expect(result.principalId).toBe(customer.id)
+  })
+
+  it("caps a parallel burst of guesses at the attempt limit", async () => {
+    const { customer } = await enrol()
+    const { token } = await createTwoFactorChallenge("customer", customer.id, meta)
+    const results = await Promise.allSettled(
+      Array.from({ length: MAX_CHALLENGE_ATTEMPTS * 3 }, () => consumeTwoFactorChallenge("customer", token, "000000"))
+    )
+    const checked = results.filter((r) => r.status === "rejected" && !/expired/i.test(String(r.reason)))
+    expect(checked).toHaveLength(MAX_CHALLENGE_ATTEMPTS)
+    const row = await ctx.db.query.twoFactorChallenges.findFirst({ where: eq(schema.twoFactorChallenges.principalId, customer.id) })
+    expect(row?.attempts).toBe(MAX_CHALLENGE_ATTEMPTS)
   })
 
   it("will not let an admin challenge be answered on the customer flow", async () => {

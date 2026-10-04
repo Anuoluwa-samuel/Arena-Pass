@@ -36,6 +36,13 @@
       "when": 1790317716923,
       "tag": "0004_organic_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791099485192,
+      "tag": "0005_security_counters",
+      "breakpoints": true
     }
   ]
 }

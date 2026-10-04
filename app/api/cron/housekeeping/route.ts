@@ -5,18 +5,20 @@ import { safeEqual } from "@/server/auth/tokens"
 import { expireStaleBookings } from "@/server/services/bookings"
 import { syncSessionLifecycle } from "@/server/services/sessions"
 import { reconcilePendingPayments } from "@/server/services/payments"
+import { sweepRateLimitBuckets } from "@/server/http/rate-limit"
 
 /**
- * Scheduled job: release expired holds, persist session lifecycle transitions, and re-verify stuck pending payments.
+ * Scheduled job: release expired holds, persist session lifecycle transitions, re-verify stuck pending payments,
+ * and drop closed rate-limit windows.
  * Vercel Cron calls it with GET; external schedulers can use POST. Both need `Authorization: Bearer $CRON_SECRET`.
  */
 const handler = route(async (req) => {
   const auth = req.headers.get("authorization") ?? ""
   if (!env.CRON_SECRET || !safeEqual(auth, `Bearer ${env.CRON_SECRET}`)) throw unauthorized("Invalid cron secret")
-  const [holds, lifecycle] = await Promise.all([expireStaleBookings(), syncSessionLifecycle()])
+  const [holds, lifecycle, rateLimitBuckets] = await Promise.all([expireStaleBookings(), syncSessionLifecycle(), sweepRateLimitBuckets()])
   // After holds are released, so a late payment re-claims a slot through the normal path.
   const payments = await reconcilePendingPayments()
-  return ok({ holds, lifecycle, payments })
+  return ok({ holds, lifecycle, payments, rateLimitBuckets })
 })
 
 export const GET = handler

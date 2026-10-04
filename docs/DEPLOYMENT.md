@@ -60,7 +60,7 @@ The app refuses to start on Vercel without a real database and Blob storage (ser
 
 ## Scaling notes
 
-- Stateless app servers: sessions, rate-limit buckets and holds live in the database (rate limiting is in-memory per instance; swap `RateLimitStore` for Redis when running many instances).
+- Stateless app servers: sessions, rate-limit buckets and holds live in the database, so limits hold across serverless instances and cold starts. The nightly housekeeping cron deletes closed rate-limit windows.
 - Public session listing responses are cacheable for 15 s; everything else is `no-store`.
 - Indexes cover the hot paths: sessions by arena + start, tickets by session/customer, bookings by status + expiry, audit logs by time.
 

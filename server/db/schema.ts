@@ -155,6 +155,21 @@ export const customers = pgTable(
   ]
 )
 
+/**
+ * Fixed-window rate limit counters. Kept in the database because serverless
+ * instances share nothing in memory: a per-process counter resets on every
+ * cold start and is multiplied by the number of warm instances.
+ */
+export const rateLimitBuckets = pgTable(
+  "rate_limit_buckets",
+  {
+    key: text("key").primaryKey(),
+    count: integer("count").notNull(),
+    resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("rate_limit_buckets_reset_idx").on(t.resetAt)]
+)
+
 /** Server-side sessions for both admin users and customers. */
 export const authSessions = pgTable(
   "auth_sessions",
@@ -191,6 +206,8 @@ export const twoFactorChallenges = pgTable(
     tokenHash: text("token_hash").notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    /** Codes tried against this challenge; it is burnt once this reaches the cap, whichever IP they came from. */
+    attempts: integer("attempts").notNull().default(0),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

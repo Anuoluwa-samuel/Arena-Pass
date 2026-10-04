@@ -1,41 +1,51 @@
+import { lt, sql } from "drizzle-orm"
+import { db, schema } from "@/server/db"
 import { AppError } from "./errors"
 
 /**
- * Sliding-window rate limiter. The default store is in-process memory, which
- * is correct for a single instance and a reasonable first line of defence
- * behind a load balancer; swap `store` for a Redis-backed implementation
- * (same interface) when running multiple instances.
+ * Fixed-window rate limiter backed by the database. An in-process counter is
+ * no defence on a serverless host: each warm instance keeps its own count and
+ * a cold start forgets it, so the effective limit grows with traffic. One
+ * upsert per hit keeps the count shared and atomic across instances.
  */
 export interface RateLimitStore {
   hit(key: string, windowMs: number): Promise<{ count: number; resetAt: number }>
 }
 
-class MemoryStore implements RateLimitStore {
-  private buckets = new Map<string, number[]>()
-  private lastSweep = Date.now()
-
+class DatabaseStore implements RateLimitStore {
   async hit(key: string, windowMs: number) {
-    const now = Date.now()
-    const cutoff = now - windowMs
-    const times = (this.buckets.get(key) ?? []).filter((t) => t > cutoff)
-    times.push(now)
-    this.buckets.set(key, times)
-    if (now - this.lastSweep > 60_000) this.sweep(cutoff)
-    return { count: times.length, resetAt: times[0] + windowMs }
-  }
-
-  private sweep(cutoff: number) {
-    this.lastSweep = Date.now()
-    for (const [k, v] of this.buckets) {
-      const kept = v.filter((t) => t > cutoff)
-      if (kept.length === 0) this.buckets.delete(k)
-      else this.buckets.set(k, kept)
-    }
+    const database = await db()
+    const now = new Date()
+    const resetAt = new Date(now.getTime() + windowMs)
+    const t = schema.rateLimitBuckets
+    // A lapsed window restarts at 1 in the same statement, so two requests
+    // racing on an expired bucket can't both see a fresh count.
+    const [row] = await database
+      .insert(t)
+      .values({ key, count: 1, resetAt })
+      .onConflictDoUpdate({
+        target: t.key,
+        set: {
+          count: sql`case when ${t.resetAt} <= ${now} then 1 else ${t.count} + 1 end`,
+          resetAt: sql`case when ${t.resetAt} <= ${now} then ${resetAt} else ${t.resetAt} end`,
+        },
+      })
+      .returning({ count: t.count, resetAt: t.resetAt })
+    return { count: row.count, resetAt: row.resetAt.getTime() }
   }
 }
 
-const globalStore = globalThis as unknown as { __arenaPassRateLimit?: RateLimitStore }
-const store: RateLimitStore = (globalStore.__arenaPassRateLimit ??= new MemoryStore())
+const store: RateLimitStore = new DatabaseStore()
+
+/** Housekeeping: drop buckets whose window has closed. */
+export async function sweepRateLimitBuckets() {
+  const database = await db()
+  const removed = await database
+    .delete(schema.rateLimitBuckets)
+    .where(lt(schema.rateLimitBuckets.resetAt, new Date()))
+    .returning({ key: schema.rateLimitBuckets.key })
+  return removed.length
+}
 
 export interface RateLimitRule {
   /** Logical bucket name, e.g. "auth.login". */
