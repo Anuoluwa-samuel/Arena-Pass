@@ -20,7 +20,7 @@
 | Tickets | Random 24-byte `qr_token` + HMAC in the QR payload; signed access key for ticket links; conditional UPDATE prevents double admission; refunded/cancelled tickets rejected at the gate |
 | Overselling | Row lock + `SKIP LOCKED` slot claim + capacity CHECK + unique slot/booking/ticket indexes |
 | Secrets | `.env*` git-ignored; `server/env.ts` fails fast when production secrets are missing; mock provider forbidden in production |
-| Headers | `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, no `X-Powered-By` |
+| Headers | `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, no `X-Powered-By`; a per-request nonce Content-Security-Policy set in `proxy.ts` (scripts need the nonce, `'strict-dynamic'`, no inline handlers), currently **report-only** with violations logged as `csp.violation` via `/api/csp-report` |
 | Information exposure | Internal errors return a generic message and are logged server-side; customer emails masked in public booking responses; passwords never serialised |
 | Audit | Login/logout, session, ticket, payment, CMS, user, role and settings changes recorded with actor and IP |
 
@@ -29,7 +29,7 @@
 - Rate limiting is per instance; use a Redis-backed store for multi-instance deployments.
 - Admin users have no self-service password reset (admins reset each other's passwords from the Administrators page).
 - Customer sign-up does not verify email ownership. Password reset and Google sign-in both prove it, which is why they revoke sessions and why linking Google clears an earlier password.
-- Consider a Content-Security-Policy header once third-party scripts are finalised.
+- Switch the Content-Security-Policy from report-only to enforcing (`CSP_HEADER` in `proxy.ts`) once production logs show no unexpected `csp.violation` entries.
 - Two-factor authentication is opt-in. Consider requiring it for SUPER_ADMIN accounts before handling live payments, rather than leaving it to each admin.
 - Losing both the authenticator and every recovery code needs staff help: a super admin clears an admin's enrolment from the Administrators page, and anyone with `customers.manage` clears a customer's from that customer's page. Neither is self-service, by design.
 - `SESSION_SECRET` now protects stored TOTP secrets, so rotating it stops enrolled authenticator apps working and forces re-enrolment. Recovery codes survive it (they are hashed, and the sign-in path treats an unreadable secret as a failed code rather than an error), so it degrades to "everyone uses a recovery code once" rather than a lockout. See docs/DEPLOYMENT.md.

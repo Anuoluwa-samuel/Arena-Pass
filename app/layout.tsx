@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { Barlow_Condensed, DM_Mono, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -43,17 +44,20 @@ export const metadata: Metadata = {
  */
 const phoneZoomScript = `(function(){var d=document.documentElement;function f(){var s=screen.width,w=window.innerWidth;var on=s>0&&s<640&&w>s*1.2&&matchMedia("(pointer: coarse)").matches;if(on){d.style.zoom=String(w/s);d.style.setProperty("--phone-zoom",String(w/s));d.setAttribute("data-phone-zoom","")}else if(d.hasAttribute("data-phone-zoom")){d.style.zoom="";d.style.removeProperty("--phone-zoom");d.removeAttribute("data-phone-zoom")}}f();addEventListener("resize",f)})()`
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Set by proxy.ts for the Content-Security-Policy. Next.js stamps its own
+  // scripts; the two inline scripts written here need it passed by hand.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
     // suppressHydrationWarning: next-themes writes the theme class onto <html>
     // from an inline script before hydration, so the server markup won't match.
     <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: phoneZoomScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: phoneZoomScript }} />
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider
@@ -61,6 +65,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          nonce={nonce}
         >
           {children}
           <Toaster position="top-center" richColors closeButton />
