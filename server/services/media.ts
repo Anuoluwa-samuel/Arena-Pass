@@ -7,29 +7,33 @@ import { AppError, notFound } from "@/server/http/errors"
 import { getStorage } from "@/server/storage"
 import { recordAudit, type AuditActor } from "./audit"
 
+/**
+ * Raster formats only. SVG is deliberately absent: it is a document that can
+ * carry script and event handlers, and a blocklist check is easily bypassed
+ * (onload=, foreignObject, javascript: links), so it is refused outright.
+ */
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
-  "image/svg+xml": "svg",
 }
 
-const MAGIC: Array<{ type: string; bytes: number[]; offset?: number }> = [
-  { type: "image/jpeg", bytes: [0xff, 0xd8, 0xff] },
-  { type: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47] },
-  { type: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] },
-  { type: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46] },
+const MAGIC: Array<{ type: string; bytes: number[]; offset?: number }[]> = [
+  [{ type: "image/jpeg", bytes: [0xff, 0xd8, 0xff] }],
+  [{ type: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] }],
+  [{ type: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] }],
+  // RIFF alone also matches WAV and AVI; WebP is RIFF with "WEBP" at byte 8.
+  [
+    { type: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46] },
+    { type: "image/webp", bytes: [0x57, 0x45, 0x42, 0x50], offset: 8 },
+  ],
 ]
 
-/** Sniff the real content type; never trust the client-supplied one alone. */
-function detectType(buf: Buffer, declared: string) {
-  for (const m of MAGIC) {
-    if (m.bytes.every((b, i) => buf[(m.offset ?? 0) + i] === b)) return m.type
-  }
-  if (declared === "image/svg+xml") {
-    const head = buf.subarray(0, 512).toString("utf8").trimStart()
-    if (/^(<\?xml|<svg)/i.test(head) && !/<script/i.test(buf.toString("utf8"))) return "image/svg+xml"
+/** Sniff the real content type from the bytes; the client-supplied type is never trusted. */
+export function detectImageType(buf: Buffer): string | null {
+  for (const parts of MAGIC) {
+    if (parts.every((m) => m.bytes.every((b, i) => buf[(m.offset ?? 0) + i] === b))) return parts[0].type
   }
   return null
 }
@@ -60,8 +64,8 @@ export async function uploadMedia(
 ) {
   if (file.buffer.length === 0) throw new AppError("VALIDATION_ERROR", "File is empty")
   if (file.buffer.length > env.MAX_UPLOAD_BYTES) throw new AppError("VALIDATION_ERROR", `File exceeds the ${Math.round(env.MAX_UPLOAD_BYTES / 1024 / 1024)}MB limit`)
-  const type = detectType(file.buffer, file.mimeType)
-  if (!type || !(type in ALLOWED_TYPES)) throw new AppError("VALIDATION_ERROR", "Only JPEG, PNG, WebP, GIF and SVG images are allowed")
+  const type = detectImageType(file.buffer)
+  if (!type || !(type in ALLOWED_TYPES)) throw new AppError("VALIDATION_ERROR", "Only JPEG, PNG, WebP and GIF images are allowed")
 
   const folder = (opts.folder ?? "general").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 40) || "general"
   const filename = `${randomUUID()}.${ALLOWED_TYPES[type]}`

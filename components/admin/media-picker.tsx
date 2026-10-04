@@ -87,9 +87,9 @@ export function MediaPicker({ value, onChange, mode = "url", folder = "content" 
             <div className="flex items-center gap-2">
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
                 {uploading ? <Spinner className="size-4" /> : <Upload className="size-4" />} Upload new
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} disabled={uploading} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} disabled={uploading} />
               </label>
-              <span className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF or SVG · up to 5MB</span>
+              <span className="text-xs text-muted-foreground">JPEG, PNG, WebP or GIF · up to 5MB</span>
             </div>
             <div className="mt-2 grid max-h-[60vh] grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4 md:grid-cols-5">
               {loading ? (

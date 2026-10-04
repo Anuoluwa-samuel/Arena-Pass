@@ -85,8 +85,8 @@ export function MediaLibrary({ items, canManage }: { items: Item[]; canManage: b
             <Button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? <Spinner className="size-4" /> : "Choose files"}</Button>
             <div className="flex items-center gap-2 text-sm"><Label htmlFor="folder" className="text-muted-foreground">Folder</Label><Input id="folder" value={folder} onChange={(e) => setFolder(e.target.value)} className="h-9 w-32" /></div>
           </div>
-          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF, SVG · up to 5MB each</p>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && upload(e.target.files)} />
+          <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF · up to 5MB each</p>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={(e) => e.target.files && upload(e.target.files)} />
         </div>
       )}
 

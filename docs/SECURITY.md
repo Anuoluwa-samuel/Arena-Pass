@@ -14,7 +14,7 @@
 | Rate limiting | Login (per IP and per email), signup, booking creation, ticket validation, uploads. Fixed-window counters in the database (one atomic upsert per hit), so they are shared by every serverless instance and survive cold starts |
 | Input validation | zod at the API boundary, business checks in services, CHECK/UNIQUE constraints in Postgres |
 | SQL injection | Drizzle parameterised queries; raw SQL only via tagged templates |
-| XSS | React escaping; CMS content rendered as text (no HTML injection); SVG uploads rejected if they contain `<script>` |
+| XSS | React escaping; CMS content rendered as text (no HTML injection); uploads limited to JPEG, PNG, WebP and GIF identified by their bytes (SVG is refused: it can carry script) |
 | Uploads | Magic-byte content sniffing, allow-list of image types, size limit, random file names, path traversal guard in the storage adapter, `nosniff` when serving |
 | Payments | Card data never handled; provider verification server-side; amount + currency equality check; webhook signature verification (HMAC-SHA512) then re-verification via API; idempotent confirmation |
 | Tickets | Random 24-byte `qr_token` + HMAC in the QR payload; signed access key for ticket links; conditional UPDATE prevents double admission; refunded/cancelled tickets rejected at the gate |
